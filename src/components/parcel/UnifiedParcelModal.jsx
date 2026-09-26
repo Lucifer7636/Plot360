@@ -13,9 +13,11 @@ import {
   CheckCircle2,
   AlertTriangle,
   ArrowRight,
-  ExternalLink
+  ExternalLink,
+  Loader2
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
+import { generateParcelPDF, safeFilename } from '../../utils/generateParcelPDF';
 
 export default function UnifiedParcelModal() {
   const {
@@ -24,10 +26,13 @@ export default function UnifiedParcelModal() {
     setUnifiedReportOpen,
     setEvidenceModalOpen,
     setFieldModalOpen,
-    fieldVerificationStatus
+    fieldVerificationStatus,
+    currentRole
   } = useApp();
 
   const [activeTab, setActiveTab] = useState('overview');
+  // Export state: 'idle' | 'generating' | 'done' | 'error'
+  const [exportState, setExportState] = useState('idle');
 
   // Accessible Escape key listener
   React.useEffect(() => {
@@ -132,20 +137,60 @@ export default function UnifiedParcelModal() {
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <button
               className="quick-action-btn"
-              onClick={() => {
-                const reportContent = `PLOT360 OFFICIAL LAND PASSPORT SUMMARY REPORT\nParcel ID: ${activeParcel.parcel_id}\nULPIN: ${activeParcel.ulpin}\nLocation: ${activeParcel.location}\nArea: ${activeParcel.standardized_area} sqm\nLand Use: ${activeParcel.land_use}\nZoning: ${activeParcel.zoning}\nOwner: ${activeParcel.owner?.name || 'Government'}\nBuilding Permission: ${activeParcel.bp?.id || 'Approved'}\nEncumbrance Status: ${activeParcel.enc?.status || 'Clear'}\nStatus: Verified\nGenerated: ${new Date().toISOString()}`;
-                const blob = new Blob([reportContent], { type: 'text/plain;charset=utf-8' });
-                const url = URL.createObjectURL(blob);
-                const link = document.createElement('a');
-                link.href = url;
-                link.download = `PLOT360_${activeParcel.parcel_id}_Land_Passport.txt`;
-                link.click();
-                URL.revokeObjectURL(url);
+              id="unified-modal-export-pdf"
+              disabled={exportState === 'generating'}
+              style={{
+                opacity: exportState === 'generating' ? 0.7 : 1,
+                cursor: exportState === 'generating' ? 'not-allowed' : 'pointer',
+                minWidth: '120px',
+                justifyContent: 'center'
               }}
-              title="Download official text report"
+              onClick={async () => {
+                if (exportState === 'generating') return;
+                setExportState('generating');
+                try {
+                  // generateParcelPDF only receives already-sanitized activeParcel from AppContext
+                  const blob = generateParcelPDF(activeParcel, currentRole, fieldVerificationStatus);
+                  const filename = safeFilename(activeParcel);
+                  const url = URL.createObjectURL(blob);
+                  const link = document.createElement('a');
+                  link.href = url;
+                  link.download = filename;
+                  document.body.appendChild(link);
+                  link.click();
+                  document.body.removeChild(link);
+                  URL.revokeObjectURL(url);
+                  setExportState('done');
+                  setTimeout(() => setExportState('idle'), 3000);
+                } catch (err) {
+                  console.error('PDF export failed:', err);
+                  setExportState('error');
+                  setTimeout(() => setExportState('idle'), 4000);
+                }
+              }}
+              title="Download visual PDF parcel intelligence report"
             >
-              <Download size={13} />
-              <span>Export Record</span>
+              {exportState === 'generating' ? (
+                <>
+                  <Loader2 size={13} style={{ animation: 'spin 1s linear infinite' }} />
+                  <span>Generating PDF…</span>
+                </>
+              ) : exportState === 'done' ? (
+                <>
+                  <CheckCircle2 size={13} style={{ color: 'var(--status-success)' }} />
+                  <span style={{ color: 'var(--status-success)' }}>PDF Downloaded</span>
+                </>
+              ) : exportState === 'error' ? (
+                <>
+                  <AlertTriangle size={13} style={{ color: 'var(--status-error)' }} />
+                  <span style={{ color: 'var(--status-error)' }}>Export failed — Retry</span>
+                </>
+              ) : (
+                <>
+                  <Download size={13} />
+                  <span>Export PDF Report</span>
+                </>
+              )}
             </button>
             <button
               className="icon-btn"

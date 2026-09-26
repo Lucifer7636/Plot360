@@ -17,9 +17,11 @@ import {
   Flame,
   Wifi,
   Sparkles,
-  Download
+  Download,
+  Loader2
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
+import { generateParcelPDF, safeFilename } from '../../utils/generateParcelPDF';
 
 export default function ParcelDetailsPanel() {
   const {
@@ -31,11 +33,15 @@ export default function ParcelDetailsPanel() {
     setUnifiedReportOpen,
     currentLocation,
     parcelDetailTab,
-    setParcelDetailTab
+    setParcelDetailTab,
+    currentRole
   } = useApp();
 
   const activeTab = parcelDetailTab || 'overview';
   const setActiveTab = setParcelDetailTab;
+
+  // Export state for panel PDF button
+  const [panelExportState, setPanelExportState] = useState('idle');
 
   const tabs = [
     { id: 'overview', label: 'Overview' },
@@ -177,14 +183,62 @@ export default function ParcelDetailsPanel() {
             <div className="panel-ulpin">ULPIN: <span className="font-mono" style={{ color: 'var(--brand-accent-cyan)', fontWeight: 600 }}>{activeParcel.ulpin}</span></div>
           </div>
         </div>
-        <button
-          className="panel-close-btn"
-          title="Deselect parcel and close panel"
-          onClick={() => selectParcel(null)}
-          aria-label="Close details"
-        >
-          <X size={16} />
-        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+          {/* PDF Export from panel header */}
+          <button
+            className="quick-action-btn"
+            id="panel-export-pdf"
+            disabled={panelExportState === 'generating'}
+            style={{
+              padding: '4px 8px',
+              fontSize: '11px',
+              opacity: panelExportState === 'generating' ? 0.7 : 1,
+              cursor: panelExportState === 'generating' ? 'not-allowed' : 'pointer'
+            }}
+            title="Export PDF Parcel Report"
+            onClick={async () => {
+              if (panelExportState === 'generating') return;
+              setPanelExportState('generating');
+              try {
+                const blob = generateParcelPDF(activeParcel, currentRole, fieldVerificationStatus);
+                const filename = safeFilename(activeParcel);
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = filename;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+                setPanelExportState('done');
+                setTimeout(() => setPanelExportState('idle'), 3000);
+              } catch (err) {
+                console.error('PDF export failed:', err);
+                setPanelExportState('error');
+                setTimeout(() => setPanelExportState('idle'), 4000);
+              }
+            }}
+          >
+            {panelExportState === 'generating' ? (
+              <Loader2 size={11} style={{ animation: 'spin 1s linear infinite' }} />
+            ) : panelExportState === 'done' ? (
+              <CheckCircle2 size={11} style={{ color: 'var(--status-success)' }} />
+            ) : (
+              <Download size={11} />
+            )}
+            <span>
+              {panelExportState === 'generating' ? 'PDF…' : panelExportState === 'done' ? 'Done' : 'PDF'}
+            </span>
+          </button>
+          <button
+            className="panel-close-btn"
+            title="Deselect parcel and close panel"
+            onClick={() => selectParcel(null)}
+            aria-label="Close details"
+          >
+            <X size={16} />
+          </button>
+        </div>
       </div>
 
       {/* Tabs */}
