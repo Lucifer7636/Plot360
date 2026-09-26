@@ -29,10 +29,13 @@ export default function ParcelDetailsPanel() {
     setEvidenceModalOpen,
     setFieldModalOpen,
     setUnifiedReportOpen,
-    currentLocation
+    currentLocation,
+    parcelDetailTab,
+    setParcelDetailTab
   } = useApp();
 
-  const [activeTab, setActiveTab] = useState('overview');
+  const activeTab = parcelDetailTab || 'overview';
+  const setActiveTab = setParcelDetailTab;
 
   const tabs = [
     { id: 'overview', label: 'Overview' },

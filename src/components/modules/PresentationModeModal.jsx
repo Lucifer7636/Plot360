@@ -56,7 +56,8 @@ export default function PresentationModeModal() {
     presentationRunning,
     setPresentationRunning,
     startPresentation,
-    exitPresentation
+    exitPresentation,
+    setParcelDetailTab
   } = useApp();
 
   // Demonstration parcel choices across demo catalog
@@ -299,20 +300,54 @@ export default function PresentationModeModal() {
     if (stepIdx === 0) {
       // 1. Problem - ensure Explorer is active view
       setActiveModule('explorer');
+      setParcelDetailTab?.('overview');
     } else if (stepIdx === 1) {
       // 2. ULPIN - ensure target parcel is bound
       if (activeParcel?.parcel_id) {
         selectParcel(activeParcel.parcel_id);
       }
       setActiveModule('explorer');
+      setParcelDetailTab?.('overview');
     } else if (stepIdx === 2) {
       // 3. GIS Cadastral
       setActiveModule('explorer');
-    } else if (stepIdx >= 3 && stepIdx <= 10) {
-      // 4-11: Data inspection steps (Records, Ownership, Planning, Building, Liabilities, Tax, Utilities, Restrictions)
+      setParcelDetailTab?.('overview');
+    } else if (stepIdx === 3) {
+      // 4. RoR Jamabandi
       setActiveModule('explorer');
+      setParcelDetailTab?.('records');
+    } else if (stepIdx === 4) {
+      // 5. Ownership & Registered Deeds
+      setActiveModule('explorer');
+      setParcelDetailTab?.('records');
+    } else if (stepIdx === 5) {
+      // 6. Master Plan, Land Use & Zoning
+      setActiveModule('explorer');
+      setParcelDetailTab?.('approvals');
+    } else if (stepIdx === 6) {
+      // 7. Building Sanction & Built-up Compliance
+      setActiveModule('explorer');
+      setParcelDetailTab?.('approvals');
+    } else if (stepIdx === 7) {
+      // 8. Liabilities, Mortgages & Encumbrances
+      setActiveModule('explorer');
+      setParcelDetailTab?.('encumbrance');
+    } else if (stepIdx === 8) {
+      // 9. Property Tax Assessment
+      setActiveModule('explorer');
+      setParcelDetailTab?.('taxation');
+    } else if (stepIdx === 9) {
+      // 10. Utilities & Infrastructure Connectivity
+      setActiveModule('explorer');
+      setParcelDetailTab?.('utilities');
+    } else if (stepIdx === 10) {
+      // 11. Restrictions & AI
+      setActiveModule('explorer');
+      setParcelDetailTab?.('ai');
     } else if (stepIdx === 11) {
       // 12. Satellite Evidence - opens genuine Sentinel-2 or truthful NOT_AVAILABLE state
+      setActiveModule('explorer');
+      setParcelDetailTab?.('ai');
       setEvidenceModalOpen(true);
     } else if (stepIdx === 12) {
       // 13. AI Field review
@@ -325,6 +360,7 @@ export default function PresentationModeModal() {
         setActiveModule('analytics');
       } else {
         setActiveModule('explorer');
+        setParcelDetailTab?.('overview');
       }
     } else if (stepIdx === 14) {
       // 15. Citizen Services
@@ -341,9 +377,11 @@ export default function PresentationModeModal() {
     } else if (stepIdx === 18) {
       // 19. Multi-jurisdiction
       setActiveModule('explorer');
+      setParcelDetailTab?.('overview');
     } else if (stepIdx === 19) {
       // 20. Conclusion
       setActiveModule('explorer');
+      setParcelDetailTab?.('overview');
     }
   };
 
@@ -440,7 +478,7 @@ export default function PresentationModeModal() {
     if (!isPresentationActive) return;
 
     const handleKeyDown = (e) => {
-      if (['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target?.tagName)) return;
+      if (['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target?.tagName) || e.target?.isContentEditable) return;
 
       if (e.key === 'Escape') {
         if (!evidenceModalOpen && !fieldModalOpen) {
@@ -452,7 +490,7 @@ export default function PresentationModeModal() {
       } else if (e.key === 'ArrowLeft' && !isPresentationGateOpen) {
         e.preventDefault();
         handlePrev();
-      } else if (e.key === ' ' && !isPresentationGateOpen) {
+      } else if ((e.key === ' ' || e.key === 'p' || e.key === 'P') && !isPresentationGateOpen) {
         e.preventDefault();
         setPresentationRunning((prev) => !prev);
       }

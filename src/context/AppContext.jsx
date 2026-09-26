@@ -318,6 +318,9 @@ export function AppProvider({ children }) {
     submitFieldVerification(target, status, notes).catch(() => {});
   };
 
+  // Synchronized parcel detail tab state for Presentation Mode and explorer
+  const [parcelDetailTab, setParcelDetailTab] = useState('overview');
+
   // Modals & Panels
   const [evidenceModalOpen, setEvidenceModalOpen] = useState(false);
   const [fieldModalOpen, setFieldModalOpen] = useState(false);
@@ -343,6 +346,7 @@ export function AppProvider({ children }) {
     if (targetParcelId) {
       selectParcel(targetParcelId);
     }
+    setParcelDetailTab('overview');
     setIsPresentationGateOpen(false);
     setIsPresentationActive(true);
     setPresentationStep(0);
@@ -354,6 +358,7 @@ export function AppProvider({ children }) {
     setIsPresentationActive(false);
     setIsPresentationGateOpen(false);
     setPresentationStep(0);
+    setParcelDetailTab('overview');
     setEvidenceModalOpen(false);
     setFieldModalOpen(false);
     setUnifiedReportOpen(false);
@@ -506,7 +511,9 @@ export function AppProvider({ children }) {
         kpiData: KPI_DATA,
         parcels: backendParcels,
         sidebarMobileOpen,
-        setSidebarMobileOpen
+        setSidebarMobileOpen,
+        parcelDetailTab,
+        setParcelDetailTab
       }}
     >
       {children}
