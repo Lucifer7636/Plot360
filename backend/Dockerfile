@@ -7,8 +7,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libgdal-dev \
     && rm -rf /var/lib/apt/lists/*
 
+RUN pip install --no-cache-dir --upgrade pip
 COPY requirements.txt ./
-RUN pip install --no-cache-dir --extra-index-url https://download.pytorch.org/whl/cpu -r requirements.txt
+RUN pip install --no-cache-dir --retries 10 --timeout 120 --extra-index-url https://download.pytorch.org/whl/cpu -r requirements.txt
 
 COPY . .
 

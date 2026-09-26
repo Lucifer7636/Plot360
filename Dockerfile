@@ -25,9 +25,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libgdal-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Python requirements (using CPU wheels for fast, lightweight cloud deployment)
+# Upgrade pip to latest (fixes urllib3 connection reset/broken pipe bugs)
+RUN pip install --no-cache-dir --upgrade pip
+
+# Install PyTorch CPU wheel with generous retries and timeout
+RUN pip install --no-cache-dir --retries 10 --timeout 120 --extra-index-url https://download.pytorch.org/whl/cpu "torch==2.5.1"
+
+# Install remaining Python requirements
 COPY backend/requirements.txt ./backend/
-RUN pip install --no-cache-dir --extra-index-url https://download.pytorch.org/whl/cpu -r ./backend/requirements.txt
+RUN pip install --no-cache-dir --retries 10 --timeout 120 -r ./backend/requirements.txt
 
 # Copy backend application source code
 COPY backend ./backend
