@@ -6,15 +6,56 @@ import {
   ArrowRight,
   CheckCircle2,
   TrendingUp,
-  Download
+  Download,
+  MapPin
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 
 export default function ParcelIntelligenceModule() {
-  const { activeParcel, setUnifiedReportOpen } = useApp();
+  const { activeParcel, selectParcel, setActiveModule, setUnifiedReportOpen } = useApp();
 
   // Unit conversion state
   const [selectedUnit, setSelectedUnit] = useState('sqm'); // sqm, acre, bigha, kanal, marla, sqft
+
+  if (!activeParcel) {
+    return (
+      <div className="page-scroll-area">
+        <div className="page-header-container">
+          <div className="breadcrumb-row">
+            <span className="breadcrumb-item">PLOT360</span>
+            <span className="breadcrumb-sep">/</span>
+            <span className="breadcrumb-item">Parcel Intelligence</span>
+          </div>
+          <div className="page-title-row">
+            <Box className="page-icon" />
+            <h1 className="page-title">Parcel Intelligence & Analytical Dossier</h1>
+          </div>
+          <p className="page-subtitle">
+            Select a cadastral parcel to calculate multi-unit conversions, inspect ISO-19152 LADM profiles, and generate valuation models.
+          </p>
+        </div>
+
+        <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-card)', borderRadius: '12px', padding: '40px 20px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '14px' }}>
+          <MapPin size={36} style={{ color: 'var(--text-muted)' }} />
+          <h3 style={{ fontSize: '16px', fontWeight: 700 }}>No Parcel Selected</h3>
+          <p style={{ fontSize: '12px', color: 'var(--text-muted)', maxWidth: '380px' }}>
+            To view comprehensive parcel intelligence, please select a parcel from the Land Explorer map or load a demo record.
+          </p>
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <button className="btn-primary" onClick={() => selectParcel('P-1027')}>
+              Load Sample Parcel P-1027
+            </button>
+            <button className="btn-secondary" onClick={() => setActiveModule('explorer')}>
+              Go to Land Explorer Map
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const rawAreaNum = parseFloat(activeParcel.standardized_area) || 1248.5;
+  const valuationNum = Math.round(rawAreaNum * 30000);
 
   const convertArea = (sqm) => {
     switch (selectedUnit) {
@@ -26,8 +67,6 @@ export default function ParcelIntelligenceModule() {
       default: return `${sqm} m²`;
     }
   };
-
-  const rawAreaNum = 1248.5;
 
   return (
     <div className="page-scroll-area">
@@ -105,10 +144,10 @@ export default function ParcelIntelligenceModule() {
           <div style={{ background: 'var(--bg-card-alt)', padding: '12px', borderRadius: '8px' }}>
             <span style={{ fontSize: '10.5px', color: 'var(--text-muted)' }}>ORIGINAL REVENUE VALUE</span>
             <div style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text-primary)', marginTop: '2px' }}>
-              {activeParcel.original_area}
+              {activeParcel.original_area} {activeParcel.original_unit || 'Acre'}
             </div>
             <div style={{ fontSize: '10.5px', color: 'var(--text-muted)', marginTop: '2px' }}>
-              Recorded in Punjab Revenue Jamabandi
+              Recorded in Revenue Jamabandi Register
             </div>
           </div>
 
@@ -125,7 +164,7 @@ export default function ParcelIntelligenceModule() {
           <div style={{ background: 'var(--bg-card-alt)', padding: '12px', borderRadius: '8px' }}>
             <span style={{ fontSize: '10.5px', color: 'var(--text-muted)' }}>INDICATIVE ANALYTICAL VALUATION</span>
             <div style={{ fontSize: '16px', fontWeight: 700, color: 'var(--brand-accent-cyan)', marginTop: '2px' }}>
-              ₹ 3,74,55,000
+              ₹ {valuationNum.toLocaleString('en-IN')}
             </div>
             <div style={{ fontSize: '10px', color: 'var(--text-muted)', marginTop: '2px' }}>
               *Indicative Analytical Estimate based on Collector Circle Rate (₹ 30,000 / m²)

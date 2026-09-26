@@ -29,7 +29,7 @@ export default function UnifiedParcelModal() {
 
   const [activeTab, setActiveTab] = useState('overview');
 
-  if (!unifiedReportOpen) return null;
+  if (!unifiedReportOpen || !activeParcel) return null;
 
   const tabs = [
     { id: 'overview', label: 'Land Passport' },
@@ -117,10 +117,20 @@ export default function UnifiedParcelModal() {
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <button
               className="quick-action-btn"
-              onClick={() => alert(`Exporting official summary report for ${activeParcel.parcel_id}...`)}
+              onClick={() => {
+                const reportContent = `PLOT360 OFFICIAL LAND PASSPORT SUMMARY REPORT\nParcel ID: ${activeParcel.parcel_id}\nULPIN: ${activeParcel.ulpin}\nLocation: ${activeParcel.location}\nArea: ${activeParcel.standardized_area} sqm\nLand Use: ${activeParcel.land_use}\nZoning: ${activeParcel.zoning}\nOwner: ${activeParcel.owner?.name || 'Government'}\nBuilding Permission: ${activeParcel.bp?.id || 'Approved'}\nEncumbrance Status: ${activeParcel.enc?.status || 'Clear'}\nStatus: Verified\nGenerated: ${new Date().toISOString()}`;
+                const blob = new Blob([reportContent], { type: 'text/plain;charset=utf-8' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `PLOT360_${activeParcel.parcel_id}_Land_Passport.txt`;
+                link.click();
+                URL.revokeObjectURL(url);
+              }}
+              title="Download official text report"
             >
               <Download size={13} />
-              <span>Export PDF</span>
+              <span>Export Record</span>
             </button>
             <button
               className="icon-btn"

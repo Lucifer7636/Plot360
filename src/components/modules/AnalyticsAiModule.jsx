@@ -190,8 +190,8 @@ export default function AnalyticsAiModule() {
                     }}
                     style={{
                       padding: '10px 12px',
-                      background: activeParcel.parcel_id === item.parcel ? 'var(--bg-card-hover)' : 'var(--bg-card-alt)',
-                      border: `1px solid ${activeParcel.parcel_id === item.parcel ? 'var(--brand-accent-blue)' : 'var(--border-subtle)'}`,
+                      background: activeParcel?.parcel_id === item.parcel ? 'var(--bg-card-hover)' : 'var(--bg-card-alt)',
+                      border: `1px solid ${activeParcel?.parcel_id === item.parcel ? 'var(--brand-accent-blue)' : 'var(--border-subtle)'}`,
                       borderRadius: '8px',
                       cursor: 'pointer',
                       display: 'flex',

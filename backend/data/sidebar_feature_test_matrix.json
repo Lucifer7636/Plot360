@@ -1,0 +1,189 @@
+[
+  {
+    "sidebar_item": "Land Explorer",
+    "route": "/",
+    "frontend_entry": "src/components/land-explorer/LandExplorerPage.jsx",
+    "api": "GET /api/v1/parcels",
+    "backend_handler": "backend/app/routers/parcels.py:get_parcels",
+    "database_dependency": "parcels, locations, ror_records",
+    "test_result": "PASS",
+    "rbac_result": "PASS (Citizen masked, Officers unmasked)",
+    "final_status": "FULLY_FUNCTIONAL"
+  },
+  {
+    "sidebar_item": "Parcel Details Tab: Overview",
+    "route": "/?tab=overview",
+    "frontend_entry": "src/components/land-explorer/ParcelDetailsPanel.jsx",
+    "api": "GET /api/v1/parcels/{ulpin}",
+    "backend_handler": "backend/app/routers/parcels.py:get_parcel_by_ulpin",
+    "database_dependency": "parcels",
+    "test_result": "PASS",
+    "rbac_result": "PASS",
+    "final_status": "FIXED"
+  },
+  {
+    "sidebar_item": "Parcel Details Tab: Land Records",
+    "route": "/?tab=records",
+    "frontend_entry": "src/components/land-explorer/ParcelDetailsPanel.jsx",
+    "api": "GET /api/v1/parcels/{ulpin}/ror",
+    "backend_handler": "backend/app/routers/governance.py:get_ror",
+    "database_dependency": "ror_records, ownership_records",
+    "test_result": "PASS",
+    "rbac_result": "PASS (Citizen masked, Revenue Officer full)",
+    "final_status": "FIXED"
+  },
+  {
+    "sidebar_item": "Parcel Details Tab: Approvals",
+    "route": "/?tab=approvals",
+    "frontend_entry": "src/components/land-explorer/ParcelDetailsPanel.jsx",
+    "api": "GET /api/v1/parcels/{ulpin}/building",
+    "backend_handler": "backend/app/routers/planning.py:get_building_permissions",
+    "database_dependency": "building_permissions",
+    "test_result": "PASS",
+    "rbac_result": "PASS (Planning Officer full)",
+    "final_status": "FIXED"
+  },
+  {
+    "sidebar_item": "Parcel Details Tab: Encumbrance",
+    "route": "/?tab=encumbrance",
+    "frontend_entry": "src/components/land-explorer/ParcelDetailsPanel.jsx",
+    "api": "GET /api/v1/parcels/{ulpin}/encumbrance",
+    "backend_handler": "backend/app/routers/governance.py:get_encumbrance",
+    "database_dependency": "encumbrance_records, mortgage_records",
+    "test_result": "PASS",
+    "rbac_result": "PASS (Registration Officer full)",
+    "final_status": "FIXED"
+  },
+  {
+    "sidebar_item": "Parcel Details Tab: Taxation",
+    "route": "/?tab=taxation",
+    "frontend_entry": "src/components/land-explorer/ParcelDetailsPanel.jsx",
+    "api": "GET /api/v1/parcels/{ulpin}/tax",
+    "backend_handler": "backend/app/routers/taxation.py:get_property_tax",
+    "database_dependency": "property_tax_records",
+    "test_result": "PASS",
+    "rbac_result": "PASS (Tax Officer full)",
+    "final_status": "FIXED"
+  },
+  {
+    "sidebar_item": "Parcel Details Tab: Utilities",
+    "route": "/?tab=utilities",
+    "frontend_entry": "src/components/land-explorer/ParcelDetailsPanel.jsx",
+    "api": "GET /api/v1/parcels/{ulpin}/utilities",
+    "backend_handler": "backend/app/routers/utilities.py:get_utilities",
+    "database_dependency": "utility_records",
+    "test_result": "PASS",
+    "rbac_result": "PASS (Municipal Officer full)",
+    "final_status": "FIXED"
+  },
+  {
+    "sidebar_item": "Parcel Details Tab: AI Insights",
+    "route": "/?tab=ai",
+    "frontend_entry": "src/components/land-explorer/ParcelDetailsPanel.jsx",
+    "api": "GET /api/v1/ai/alerts",
+    "backend_handler": "backend/app/routers/ai.py:get_alerts",
+    "database_dependency": "ai_alerts, temporal_evidence",
+    "test_result": "PASS",
+    "rbac_result": "PASS (Admin/Auditor/Planning Officer full)",
+    "final_status": "FIXED"
+  },
+  {
+    "sidebar_item": "Parcel Intelligence",
+    "route": "/intelligence",
+    "frontend_entry": "src/components/modules/ParcelIntelligenceModule.jsx",
+    "api": "GET /api/v1/parcels/{ulpin}",
+    "backend_handler": "backend/app/routers/parcels.py:get_parcel_by_ulpin",
+    "database_dependency": "parcels",
+    "test_result": "PASS",
+    "rbac_result": "PASS",
+    "final_status": "FIXED"
+  },
+  {
+    "sidebar_item": "Governance & Records",
+    "route": "/records",
+    "frontend_entry": "src/components/modules/GovernanceModule.jsx",
+    "api": "GET /api/v1/parcels/{ulpin}/ror",
+    "backend_handler": "backend/app/routers/governance.py:get_ror",
+    "database_dependency": "ror_records, deeds, mutations",
+    "test_result": "PASS",
+    "rbac_result": "PASS (Revenue/Registration access validated)",
+    "final_status": "FIXED"
+  },
+  {
+    "sidebar_item": "Planning & Development",
+    "route": "/planning",
+    "frontend_entry": "src/components/modules/PlanningModule.jsx",
+    "api": "GET /api/v1/parcels/{ulpin}/planning-crosscheck",
+    "backend_handler": "backend/app/routers/planning.py:get_planning_crosscheck",
+    "database_dependency": "zoning_records, master_plans, building_permissions",
+    "test_result": "PASS",
+    "rbac_result": "PASS (Planning Officer validated)",
+    "final_status": "FIXED"
+  },
+  {
+    "sidebar_item": "Citizen Services",
+    "route": "/citizen",
+    "frontend_entry": "src/components/modules/CitizenServicesModule.jsx",
+    "api": "POST /api/v1/citizen/requests",
+    "backend_handler": "backend/app/routers/citizen.py:create_service_request",
+    "database_dependency": "citizen_requests",
+    "test_result": "PASS",
+    "rbac_result": "PASS (Citizen role access)",
+    "final_status": "FULLY_FUNCTIONAL"
+  },
+  {
+    "sidebar_item": "Analytics & AI",
+    "route": "/analytics",
+    "frontend_entry": "src/components/modules/AnalyticsAiModule.jsx",
+    "api": "GET /api/v1/conflicts",
+    "backend_handler": "backend/app/routers/conflicts.py:get_conflicts",
+    "database_dependency": "data_conflicts, temporal_evidence",
+    "test_result": "PASS",
+    "rbac_result": "PASS (Auditor/Officer access)",
+    "final_status": "FIXED"
+  },
+  {
+    "sidebar_item": "Integration Hub",
+    "route": "/integrations",
+    "frontend_entry": "src/components/modules/IntegrationHubModule.jsx",
+    "api": "GET /api/v1/integrations",
+    "backend_handler": "backend/app/routers/integrations.py:get_integrations",
+    "database_dependency": "integration_connectors, sync_jobs",
+    "test_result": "PASS",
+    "rbac_result": "PASS (Admin access)",
+    "final_status": "FIXED"
+  },
+  {
+    "sidebar_item": "Administration & Security",
+    "route": "/admin",
+    "frontend_entry": "src/components/modules/AdminSecurityModule.jsx",
+    "api": "GET /api/v1/admin/audit-logs",
+    "backend_handler": "backend/app/routers/admin.py:get_audit_logs",
+    "database_dependency": "audit_logs, user_roles",
+    "test_result": "PASS",
+    "rbac_result": "PASS (Admin/Auditor restricted)",
+    "final_status": "FULLY_FUNCTIONAL"
+  },
+  {
+    "sidebar_item": "System / Data Health",
+    "route": "/health",
+    "frontend_entry": "src/components/modules/SystemHealthModule.jsx",
+    "api": "GET /api/v1/health/detailed",
+    "backend_handler": "backend/app/routers/health.py:get_detailed_health",
+    "database_dependency": "system_metrics, dataset_monitors",
+    "test_result": "PASS",
+    "rbac_result": "PASS",
+    "final_status": "FIXED"
+  },
+  {
+    "sidebar_item": "Presentation Mode",
+    "route": "/presentation",
+    "frontend_entry": "src/components/modules/PresentationModeModal.jsx",
+    "api": "GET /api/v1/parcels",
+    "backend_handler": "backend/app/routers/parcels.py:get_parcels",
+    "database_dependency": "parcels",
+    "test_result": "PASS",
+    "rbac_result": "PASS",
+    "final_status": "FULLY_FUNCTIONAL"
+  }
+]

@@ -50,8 +50,11 @@ export default function CitizenServicesModule() {
 
   const [newRequestSuccess, setNewRequestSuccess] = useState(null);
 
+  const [searchError, setSearchError] = useState(null);
+
   const handleSearch = (e) => {
     e.preventDefault();
+    setSearchError(null);
     if (!citizenQuery.trim()) return;
     const found = parcels.find(
       p =>
@@ -61,7 +64,7 @@ export default function CitizenServicesModule() {
     if (found) {
       selectParcel(found.parcel_id);
     } else {
-      alert(`No parcel found matching "${citizenQuery}". Try P-1027 or IN-PB-CHD-0001027.`);
+      setSearchError(`No parcel found matching "${citizenQuery}". Try P-1027 or IN-PB-CHD-0001027.`);
     }
   };
 
@@ -128,21 +131,31 @@ export default function CitizenServicesModule() {
       </div>
 
       {/* Citizen Search Bar */}
-      <form onSubmit={handleSearch} style={{ display: 'flex', gap: '10px', background: 'var(--bg-card)', padding: '14px', borderRadius: '12px', border: '1px solid var(--border-card)' }}>
-        <div style={{ flex: 1, position: 'relative' }}>
-          <Search size={16} style={{ position: 'absolute', left: '12px', top: '12px', color: 'var(--text-muted)' }} />
-          <input
-            type="text"
-            className="search-input"
-            style={{ height: '40px', paddingLeft: '38px', fontSize: '13px' }}
-            placeholder="Search your Land by ULPIN, Parcel ID, Survey No., or Location (e.g. IN-PB-CHD-0001027 or P-1027)..."
-            value={citizenQuery}
-            onChange={(e) => setCitizenQuery(e.target.value)}
-          />
+      <form onSubmit={handleSearch} style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+        <div style={{ display: 'flex', gap: '10px', background: 'var(--bg-card)', padding: '14px', borderRadius: '12px', border: '1px solid var(--border-card)' }}>
+          <div style={{ flex: 1, position: 'relative' }}>
+            <Search size={16} style={{ position: 'absolute', left: '12px', top: '12px', color: 'var(--text-muted)' }} />
+            <input
+              type="text"
+              className="search-input"
+              style={{ height: '40px', paddingLeft: '38px', fontSize: '13px' }}
+              placeholder="Search your Land by ULPIN, Parcel ID, Survey No., or Location (e.g. IN-PB-CHD-0001027 or P-1027)..."
+              value={citizenQuery}
+              onChange={(e) => {
+                setCitizenQuery(e.target.value);
+                setSearchError(null);
+              }}
+            />
+          </div>
+          <button type="submit" className="btn-primary" style={{ padding: '0 20px', fontSize: '13px' }}>
+            Search Land
+          </button>
         </div>
-        <button type="submit" className="btn-primary" style={{ padding: '0 20px', fontSize: '13px' }}>
-          Search Land
-        </button>
+        {searchError && (
+          <div style={{ fontSize: '11.5px', color: 'var(--status-error)', padding: '0 4px' }}>
+            {searchError}
+          </div>
+        )}
       </form>
 
       {/* Grid: Left (Service Request Submission) + Right (Application Tracking) */}
@@ -151,7 +164,7 @@ export default function CitizenServicesModule() {
         <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-card)', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
           <h3 style={{ fontSize: '15px', fontWeight: 700 }}>Apply for Citizen Land Service</h3>
           <div style={{ fontSize: '11.5px', color: 'var(--text-muted)' }}>
-            Selected Parcel: <strong style={{ color: 'var(--brand-accent-blue)' }}>{activeParcel.parcel_id}</strong> ({activeParcel.ulpin})
+            Selected Parcel: <strong style={{ color: 'var(--brand-accent-blue)' }}>{activeParcel?.parcel_id || 'P-1027'}</strong> ({activeParcel?.ulpin || 'IN-PB-CHD-0001027'})
           </div>
 
           <form onSubmit={handleSubmitRequest} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
