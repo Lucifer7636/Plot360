@@ -50,10 +50,10 @@ function MainApp() {
         {activeModule === 'integrations' && <IntegrationHubModule />}
         {activeModule === 'admin' && <AdminSecurityModule />}
         {activeModule === 'health' && <SystemHealthModule />}
-        {activeModule === 'presentation' && <PresentationModeModal />}
       </div>
 
-      {/* Global Modals */}
+      {/* Global Modals & Persistent Overlays */}
+      <PresentationModeModal />
       <UnifiedParcelModal />
       <ViewEvidenceModal />
       <FieldVerificationModal />

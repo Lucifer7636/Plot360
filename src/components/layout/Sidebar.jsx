@@ -17,9 +17,22 @@ import {
 import { useApp } from '../../context/AppContext';
 
 export default function Sidebar() {
-  const { activeModule, setActiveModule, t, setHelpModalOpen, setSidebarMobileOpen } = useApp();
+  const {
+    activeModule,
+    setActiveModule,
+    t,
+    setHelpModalOpen,
+    setSidebarMobileOpen,
+    isPresentationActive,
+    openPresentation
+  } = useApp();
 
   const handleNavClick = (id) => {
+    if (id === 'presentation') {
+      openPresentation();
+      setSidebarMobileOpen(false);
+      return;
+    }
     setActiveModule(id);
     setSidebarMobileOpen(false);
   };
@@ -93,9 +106,10 @@ export default function Sidebar() {
       {/* Secondary Navigation Footer */}
       <div className="sidebar-footer">
         <button
-          className={`nav-item ${activeModule === 'presentation' ? 'active' : ''}`}
-          onClick={() => handleNavClick('presentation')}
+          className={`nav-item ${isPresentationActive ? 'active' : ''}`}
+          onClick={() => { openPresentation(); setSidebarMobileOpen(false); }}
           title={t ? t('nav.presentation', 'Presentation Mode') : 'Presentation Mode'}
+          aria-label={t ? t('nav.presentation', 'Presentation Mode') : 'Presentation Mode'}
         >
           <Tv className="nav-item-icon" />
           <span className="sidebar-label">{t ? t('nav.presentation', 'Presentation Mode') : 'Presentation Mode'}</span>

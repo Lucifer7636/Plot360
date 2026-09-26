@@ -171,7 +171,7 @@ export function AppProvider({ children }) {
   };
 
   // Active Navigation Module
-  const [activeModule, setActiveModule] = useState('explorer');
+  const [activeModule, setActiveModuleState] = useState('explorer');
 
   // Real Mobile Sidebar Drawer State
   const [sidebarMobileOpen, setSidebarMobileOpen] = useState(false);
@@ -326,6 +326,48 @@ export function AppProvider({ children }) {
   const [helpModalOpen, setHelpModalOpen] = useState(false);
   const [platformModalOpen, setPlatformModalOpen] = useState(false);
 
+  // Presentation Mode Global Lifecycle State (independent of activeModule)
+  const [isPresentationActive, setIsPresentationActive] = useState(false);
+  const [isPresentationGateOpen, setIsPresentationGateOpen] = useState(false);
+  const [presentationStep, setPresentationStep] = useState(0);
+  const [presentationRunning, setPresentationRunning] = useState(false);
+
+  const openPresentation = useCallback(() => {
+    setIsPresentationActive(true);
+    setIsPresentationGateOpen(true);
+    setPresentationRunning(false);
+    setPresentationStep(0);
+  }, []);
+
+  const startPresentation = useCallback((targetParcelId) => {
+    if (targetParcelId) {
+      selectParcel(targetParcelId);
+    }
+    setIsPresentationGateOpen(false);
+    setIsPresentationActive(true);
+    setPresentationStep(0);
+    setPresentationRunning(true);
+  }, [selectParcel]);
+
+  const exitPresentation = useCallback(() => {
+    setPresentationRunning(false);
+    setIsPresentationActive(false);
+    setIsPresentationGateOpen(false);
+    setPresentationStep(0);
+    setEvidenceModalOpen(false);
+    setFieldModalOpen(false);
+    setUnifiedReportOpen(false);
+    setActiveModuleState('explorer');
+  }, []);
+
+  const handleSetActiveModule = useCallback((newModule) => {
+    if (newModule === 'presentation') {
+      openPresentation();
+      return;
+    }
+    setActiveModuleState(newModule);
+  }, [openPresentation]);
+
   // Global Search state
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -409,7 +451,18 @@ export function AppProvider({ children }) {
         locationToast,
         showLocationToast,
         activeModule,
-        setActiveModule,
+        setActiveModule: handleSetActiveModule,
+        isPresentationActive,
+        setIsPresentationActive,
+        isPresentationGateOpen,
+        setIsPresentationGateOpen,
+        presentationStep,
+        setPresentationStep,
+        presentationRunning,
+        setPresentationRunning,
+        openPresentation,
+        startPresentation,
+        exitPresentation,
         currentRole,
         setCurrentRole,
         roles: ROLES,
