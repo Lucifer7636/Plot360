@@ -18,3 +18,5 @@ services:
         value: /api/v1
       - key: HOST
         value: 0.0.0.0
+      - key: DATABASE_URL
+        value: sqlite:///./plot360_dev.db
