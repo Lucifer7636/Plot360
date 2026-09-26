@@ -15,11 +15,23 @@ import { useApp } from '../../context/AppContext';
 import { getPlanningCrossCheck } from '../../api/planning';
 
 export default function PlanningModule() {
-  const { activeParcel, selectParcel, setActiveModule } = useApp();
+  const { activeParcel, selectParcel, setActiveModule, locationParcels, selectedLocation } = useApp();
   const [crossCheckRunning, setCrossCheckRunning] = useState(false);
   const [crossCheckResult, setCrossCheckResult] = useState(null);
+  const [filterText, setFilterText] = useState('');
 
   if (!activeParcel) {
+    const displayedParcels = (locationParcels || []).filter(p => {
+      if (!filterText) return true;
+      const q = filterText.toLowerCase();
+      return (
+        p.parcel_id?.toLowerCase().includes(q) ||
+        p.ulpin?.toLowerCase().includes(q) ||
+        p.zoning?.toLowerCase().includes(q) ||
+        p.land_use?.toLowerCase().includes(q)
+      );
+    });
+
     return (
       <div className="page-scroll-area">
         <div className="page-header-container">
@@ -27,6 +39,8 @@ export default function PlanningModule() {
             <span className="breadcrumb-item">PLOT360</span>
             <span className="breadcrumb-sep">/</span>
             <span className="breadcrumb-item">Planning & Development</span>
+            <span className="breadcrumb-sep">/</span>
+            <span style={{ color: 'var(--text-secondary)' }}>Zoning & Regulation Index</span>
           </div>
           <div className="page-title-row">
             <Compass className="page-icon" />
@@ -37,19 +51,122 @@ export default function PlanningModule() {
           </p>
         </div>
 
-        <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-card)', borderRadius: '12px', padding: '40px 20px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '14px' }}>
-          <MapPin size={36} style={{ color: 'var(--text-muted)' }} />
-          <h3 style={{ fontSize: '16px', fontWeight: 700 }}>No Parcel Selected</h3>
-          <p style={{ fontSize: '12px', color: 'var(--text-muted)', maxWidth: '380px' }}>
-            Select a parcel from the Land Explorer map to run planning cross-checks and inspect building sanction parameters.
-          </p>
-          <div style={{ display: 'flex', gap: '10px' }}>
-            <button className="btn-primary" onClick={() => selectParcel('P-1027')}>
-              Load Sample Parcel P-1027
-            </button>
+        {/* Location Planning Context Banner */}
+        <div
+          style={{
+            background: 'var(--bg-card)',
+            border: '1px solid var(--border-card)',
+            borderRadius: 'var(--radius-lg)',
+            padding: '16px 20px',
+            marginBottom: '16px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: '12px'
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div
+              style={{
+                width: '40px',
+                height: '40px',
+                borderRadius: '8px',
+                background: 'rgba(56, 189, 248, 0.1)',
+                border: '1px solid rgba(56, 189, 248, 0.25)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: 'var(--brand-accent-cyan)'
+              }}
+            >
+              <Compass size={20} />
+            </div>
+            <div>
+              <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)' }}>
+                Planning Authority: {selectedLocation?.name || 'Chandigarh & Punjab Region'}
+              </div>
+              <div style={{ fontSize: '11.5px', color: 'var(--text-secondary)' }}>
+                {displayedParcels.length} Cadastral Parcels Regulated • Master Plan 2031 In Force
+              </div>
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: '8px' }}>
             <button className="btn-secondary" onClick={() => setActiveModule('explorer')}>
-              Go to Land Explorer Map
+              Open Land Explorer Map
             </button>
+            <button className="btn-primary" onClick={() => selectParcel('P-1027')}>
+              Inspect Sample P-1027
+            </button>
+          </div>
+        </div>
+
+        {/* Planning Registry Index Table */}
+        <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-card)', borderRadius: 'var(--radius-lg)', padding: '16px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', flexWrap: 'wrap', gap: '10px' }}>
+            <h3 style={{ fontSize: '14px', fontWeight: 700, margin: 0 }}>Zoning & Sanctions Directory</h3>
+            <div style={{ position: 'relative', width: '260px' }}>
+              <input
+                type="text"
+                placeholder="Filter by Parcel ID, Zoning, or ULPIN..."
+                value={filterText}
+                onChange={(e) => setFilterText(e.target.value)}
+                style={{
+                  width: '100%',
+                  background: 'var(--bg-card-subtle)',
+                  border: '1px solid var(--border-subtle)',
+                  borderRadius: 'var(--radius-sm)',
+                  padding: '6px 10px',
+                  fontSize: '11.5px',
+                  color: 'var(--text-primary)'
+                }}
+              />
+            </div>
+          </div>
+
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
+              <thead>
+                <tr style={{ borderBottom: '1px solid var(--border-subtle)', color: 'var(--text-secondary)', textAlign: 'left', fontSize: '11px', textTransform: 'uppercase' }}>
+                  <th style={{ padding: '8px 10px' }}>Parcel ID</th>
+                  <th style={{ padding: '8px 10px' }}>ULPIN</th>
+                  <th style={{ padding: '8px 10px' }}>Master Plan Zoning</th>
+                  <th style={{ padding: '8px 10px' }}>Cadastral Area</th>
+                  <th style={{ padding: '8px 10px' }}>Building Sanction</th>
+                  <th style={{ padding: '8px 10px', textAlign: 'right' }}>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {displayedParcels.map(p => (
+                  <tr key={p.parcel_id} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
+                    <td style={{ padding: '10px', fontWeight: 600, color: 'var(--text-primary)' }}>{p.parcel_id}</td>
+                    <td style={{ padding: '10px' }}>
+                      <span className="font-mono" style={{ fontSize: '11px', color: 'var(--brand-accent-cyan)' }}>{p.ulpin}</span>
+                    </td>
+                    <td style={{ padding: '10px' }}>
+                      <span style={{ background: 'rgba(56, 189, 248, 0.08)', color: 'var(--brand-accent-cyan)', padding: '3px 7px', borderRadius: '4px', fontSize: '11px', fontWeight: 500 }}>
+                        {p.zoning || p.land_use || 'Residential (R-1)'}
+                      </span>
+                    </td>
+                    <td style={{ padding: '10px', color: 'var(--text-secondary)' }}>{p.area_display || `${p.standardized_area || 0} m²`}</td>
+                    <td style={{ padding: '10px' }}>
+                      <span className="status-pill-verified" style={{ fontSize: '10.5px' }}>
+                        {p.bp?.status === 'Approved' ? '✓ Sanctioned' : 'Under Review'}
+                      </span>
+                    </td>
+                    <td style={{ padding: '10px', textAlign: 'right' }}>
+                      <button
+                        className="btn-primary"
+                        style={{ fontSize: '11px', padding: '4px 10px' }}
+                        onClick={() => selectParcel(p.parcel_id)}
+                      >
+                        Inspect FAR & Sanctions
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
       </div>

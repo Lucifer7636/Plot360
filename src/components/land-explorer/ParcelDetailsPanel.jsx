@@ -171,7 +171,7 @@ export default function ParcelDetailsPanel() {
               <span>{activeParcel.parcel_id}</span>
               <span className="status-pill-verified">✓ Verified</span>
             </div>
-            <div className="panel-ulpin">ULPIN: {activeParcel.ulpin}</div>
+            <div className="panel-ulpin">ULPIN: <span className="font-mono" style={{ color: 'var(--brand-accent-cyan)', fontWeight: 600 }}>{activeParcel.ulpin}</span></div>
           </div>
         </div>
         <button
@@ -239,6 +239,40 @@ export default function ParcelDetailsPanel() {
               </div>
             </div>
 
+            {/* Direct Temporal Satellite Evidence CTA */}
+            {(activeParcel.ai_alert || activeParcel.sentinel_available) && (
+              <div
+                style={{
+                  background: 'rgba(239, 68, 68, 0.08)',
+                  border: '1px solid rgba(239, 68, 68, 0.28)',
+                  borderRadius: 'var(--radius-md)',
+                  padding: '9px 12px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: '8px'
+                }}
+              >
+                <div>
+                  <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--status-error)', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                    <AlertTriangle size={13} />
+                    <span>TEMPORAL CHANGE DETECTED</span>
+                  </div>
+                  <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '2px' }}>
+                    Sentinel-2 ground transformation identified (2020 vs 2025)
+                  </div>
+                </div>
+                <button
+                  className="btn-primary"
+                  style={{ fontSize: '10.5px', padding: '5px 10px', whiteSpace: 'nowrap' }}
+                  onClick={() => setEvidenceModalOpen(true)}
+                  title="Inspect genuine Sentinel-2 temporal observation"
+                >
+                  Inspect Evidence
+                </button>
+              </div>
+            )}
+
             {/* Basic Information Section */}
             <div className="info-section">
               <div className="info-section-title">Basic Information</div>
@@ -249,7 +283,7 @@ export default function ParcelDetailsPanel() {
                 </div>
                 <div className="info-item">
                   <span className="info-key">ULPIN</span>
-                  <span className="info-val" style={{ fontSize: '10.5px' }}>{activeParcel.ulpin}</span>
+                  <span className="info-val font-mono" style={{ fontSize: '11px', color: 'var(--brand-accent-cyan)' }}>{activeParcel.ulpin}</span>
                 </div>
                 <div className="info-item">
                   <span className="info-key">Location</span>

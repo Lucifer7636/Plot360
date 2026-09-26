@@ -16,10 +16,22 @@ import {
 import { useApp } from '../../context/AppContext';
 
 export default function GovernanceModule() {
-  const { activeParcel, selectParcel, setActiveModule, setUnifiedReportOpen } = useApp();
+  const { activeParcel, selectParcel, setActiveModule, setUnifiedReportOpen, locationParcels, selectedLocation } = useApp();
   const [subTab, setSubTab] = useState('ror');
+  const [filterText, setFilterText] = useState('');
 
   if (!activeParcel) {
+    const displayedParcels = (locationParcels || []).filter(p => {
+      if (!filterText) return true;
+      const q = filterText.toLowerCase();
+      return (
+        p.parcel_id?.toLowerCase().includes(q) ||
+        p.ulpin?.toLowerCase().includes(q) ||
+        p.land_use?.toLowerCase().includes(q) ||
+        p.survey_no?.toLowerCase().includes(q)
+      );
+    });
+
     return (
       <div className="page-scroll-area">
         <div className="page-header-container">
@@ -27,6 +39,8 @@ export default function GovernanceModule() {
             <span className="breadcrumb-item">PLOT360</span>
             <span className="breadcrumb-sep">/</span>
             <span className="breadcrumb-item">Governance & Records</span>
+            <span className="breadcrumb-sep">/</span>
+            <span style={{ color: 'var(--text-secondary)' }}>Cadastral Directory</span>
           </div>
           <div className="page-title-row">
             <Landmark className="page-icon" />
@@ -37,19 +51,123 @@ export default function GovernanceModule() {
           </p>
         </div>
 
-        <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-card)', borderRadius: '12px', padding: '40px 20px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '14px' }}>
-          <MapPin size={36} style={{ color: 'var(--text-muted)' }} />
-          <h3 style={{ fontSize: '16px', fontWeight: 700 }}>No Parcel Selected</h3>
-          <p style={{ fontSize: '12px', color: 'var(--text-muted)', maxWidth: '380px' }}>
-            Select a parcel from the Land Explorer map to inspect official Jamabandi records, deed history, and encumbrance registers.
-          </p>
-          <div style={{ display: 'flex', gap: '10px' }}>
-            <button className="btn-primary" onClick={() => selectParcel('P-1027')}>
-              Load Sample Parcel P-1027
-            </button>
+        {/* Location & Jurisdiction Context Banner */}
+        <div
+          style={{
+            background: 'var(--bg-card)',
+            border: '1px solid var(--border-card)',
+            borderRadius: 'var(--radius-lg)',
+            padding: '16px 20px',
+            marginBottom: '16px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: '12px'
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div
+              style={{
+                width: '40px',
+                height: '40px',
+                borderRadius: '8px',
+                background: 'rgba(56, 189, 248, 0.1)',
+                border: '1px solid rgba(56, 189, 248, 0.25)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: 'var(--brand-accent-cyan)'
+              }}
+            >
+              <MapPin size={20} />
+            </div>
+            <div>
+              <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)' }}>
+                Active Jurisdiction: {selectedLocation?.name || 'Chandigarh & Punjab Region'}
+              </div>
+              <div style={{ fontSize: '11.5px', color: 'var(--text-secondary)' }}>
+                {displayedParcels.length} Cadastral Records Indexed • Select a record below or open the GIS Map to view boundaries
+              </div>
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: '8px' }}>
             <button className="btn-secondary" onClick={() => setActiveModule('explorer')}>
-              Go to Land Explorer Map
+              Open Land Explorer Map
             </button>
+            <button className="btn-primary" onClick={() => selectParcel('P-1027')}>
+              Inspect Sample P-1027
+            </button>
+          </div>
+        </div>
+
+        {/* Cadastral Records Directory Table */}
+        <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-card)', borderRadius: 'var(--radius-lg)', padding: '16px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', flexWrap: 'wrap', gap: '10px' }}>
+            <h3 style={{ fontSize: '14px', fontWeight: 700, margin: 0 }}>Cadastral Registry Index</h3>
+            <div style={{ position: 'relative', width: '260px' }}>
+              <Search size={14} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+              <input
+                type="text"
+                placeholder="Filter by Parcel ID, ULPIN, or Use..."
+                value={filterText}
+                onChange={(e) => setFilterText(e.target.value)}
+                style={{
+                  width: '100%',
+                  background: 'var(--bg-card-subtle)',
+                  border: '1px solid var(--border-subtle)',
+                  borderRadius: 'var(--radius-sm)',
+                  padding: '6px 10px 6px 30px',
+                  fontSize: '11.5px',
+                  color: 'var(--text-primary)'
+                }}
+              />
+            </div>
+          </div>
+
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
+              <thead>
+                <tr style={{ borderBottom: '1px solid var(--border-subtle)', color: 'var(--text-secondary)', textAlign: 'left', fontSize: '11px', textTransform: 'uppercase' }}>
+                  <th style={{ padding: '8px 10px' }}>Parcel ID</th>
+                  <th style={{ padding: '8px 10px' }}>ULPIN</th>
+                  <th style={{ padding: '8px 10px' }}>Survey / Khata</th>
+                  <th style={{ padding: '8px 10px' }}>Land Use</th>
+                  <th style={{ padding: '8px 10px' }}>Standard Area</th>
+                  <th style={{ padding: '8px 10px' }}>Registry Status</th>
+                  <th style={{ padding: '8px 10px', textAlign: 'right' }}>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {displayedParcels.map(p => (
+                  <tr key={p.parcel_id} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
+                    <td style={{ padding: '10px', fontWeight: 600, color: 'var(--text-primary)' }}>{p.parcel_id}</td>
+                    <td style={{ padding: '10px' }}>
+                      <span className="font-mono" style={{ fontSize: '11px', color: 'var(--brand-accent-cyan)' }}>{p.ulpin}</span>
+                    </td>
+                    <td style={{ padding: '10px', color: 'var(--text-secondary)' }}>{p.survey_no || p.khasra_no || 'N/A'}</td>
+                    <td style={{ padding: '10px' }}>
+                      <span style={{ background: 'rgba(255,255,255,0.06)', padding: '3px 7px', borderRadius: '4px', fontSize: '11px' }}>
+                        {p.land_use || 'Standard'}
+                      </span>
+                    </td>
+                    <td style={{ padding: '10px', color: 'var(--text-secondary)' }}>{p.area_display || `${p.standardized_area || 0} m²`}</td>
+                    <td style={{ padding: '10px' }}>
+                      <span className="status-pill-verified" style={{ fontSize: '10.5px' }}>✓ Verified</span>
+                    </td>
+                    <td style={{ padding: '10px', textAlign: 'right' }}>
+                      <button
+                        className="btn-primary"
+                        style={{ fontSize: '11px', padding: '4px 10px' }}
+                        onClick={() => selectParcel(p.parcel_id)}
+                      >
+                        Inspect Jamabandi
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
       </div>

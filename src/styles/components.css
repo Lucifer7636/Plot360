@@ -1147,3 +1147,15 @@
   color: var(--text-primary);
   transform: translateY(-1px);
 }
+
+.font-mono {
+  font-family: var(--font-mono, monospace);
+  letter-spacing: 0.02em;
+}
+
+.parcel-tooltip-ulpin {
+  font-family: var(--font-mono, monospace);
+  font-size: 10px;
+  color: var(--brand-accent-cyan);
+  margin-top: 1px;
+}
