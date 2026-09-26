@@ -109,7 +109,7 @@ export default function UnifiedParcelModal() {
                 <span className="status-pill-verified">✓ Active Government Record</span>
               </div>
               <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-                ULPIN: <strong style={{ color: 'var(--brand-accent-cyan)' }}>{activeParcel.ulpin}</strong> • {activeParcel.location}
+                ULPIN: <strong className="font-mono" style={{ color: 'var(--brand-accent-cyan)' }}>{activeParcel.ulpin}</strong> • {activeParcel.location}
               </div>
             </div>
           </div>
