@@ -151,8 +151,8 @@ export default function IntegrationHubModule() {
     } finally {
       setTimeout(() => {
         setSyncing(false);
-        setSyncSuccessMessage('All 6 departmental registries synchronized successfully with PLOT360 Common Land Model.');
-        setTimeout(() => setSyncSuccessMessage(null), 4000);
+        setSyncSuccessMessage('DEMO SYNC — NO EXTERNAL SYSTEM CALLED: Simulated demonstration datasets refreshed against PLOT360 Common Land Model.');
+        setTimeout(() => setSyncSuccessMessage(null), 5000);
       }, 1000);
     }
   };
@@ -179,14 +179,14 @@ export default function IntegrationHubModule() {
       {syncSuccessMessage && (
         <div
           style={{
-            background: 'rgba(34, 197, 94, 0.12)',
-            border: '1px solid rgba(34, 197, 94, 0.35)',
+            background: 'rgba(245, 158, 11, 0.12)',
+            border: '1px solid rgba(245, 158, 11, 0.35)',
             borderRadius: '10px',
             padding: '12px 16px',
             display: 'flex',
             alignItems: 'center',
             gap: '10px',
-            color: 'var(--status-success)',
+            color: 'var(--status-warning)',
             fontSize: '12.5px',
             fontWeight: 600
           }}
@@ -205,14 +205,32 @@ export default function IntegrationHubModule() {
           padding: '14px 18px',
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'space-between'
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: '12px'
         }}
       >
         <div>
-          <div style={{ fontSize: '13.5px', fontWeight: 700, color: 'var(--brand-accent-blue)' }}>
-            PLOT360 Common Land Model Pipeline
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{ fontSize: '13.5px', fontWeight: 700, color: 'var(--brand-accent-blue)' }}>
+              PLOT360 Common Land Model Pipeline
+            </span>
+            <span
+              style={{
+                fontSize: '10px',
+                fontWeight: 700,
+                letterSpacing: '0.5px',
+                color: 'var(--status-warning)',
+                background: 'rgba(245, 158, 11, 0.12)',
+                border: '1px solid rgba(245, 158, 11, 0.3)',
+                padding: '2px 7px',
+                borderRadius: '4px'
+              }}
+            >
+              SIMULATED SYNC
+            </span>
           </div>
-          <div style={{ fontSize: '11.5px', color: 'var(--text-secondary)' }}>
+          <div style={{ fontSize: '11.5px', color: 'var(--text-secondary)', marginTop: '2px' }}>
             STATE DEPARTMENT DATA → STATE-SPECIFIC MAPPING → VALIDATION → COMMON LAND MODEL → PLOT360
           </div>
         </div>
@@ -223,7 +241,7 @@ export default function IntegrationHubModule() {
           style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
         >
           <RefreshCw size={14} className={syncing ? 'spin' : ''} />
-          <span>{syncing ? 'Synchronizing Pipeline...' : 'Sync All Datasets'}</span>
+          <span>{syncing ? 'Simulating Pipeline Sync...' : 'Simulate Sync (Demo)'}</span>
         </button>
       </div>
 

@@ -57,6 +57,7 @@
 }
 
 [data-theme='light'] {
+  --brand-accent-cyan: #0284c7;
   --bg-app: #f1f5f9;
   --bg-sidebar: #09162e;
   --bg-sidebar-hover: #122447;

@@ -321,15 +321,34 @@ export default function AnalyticsAiModule() {
             )}
             {extracting && (
               <div style={{ fontSize: '12px', color: 'var(--status-warning)' }}>
-                ⚡ Processing OCR entity extraction and polygon cross-reference...
+                ⚡ Simulating OCR entity extraction and polygon cross-reference...
               </div>
             )}
           </div>
 
           <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-card)', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            <h3 style={{ fontSize: '15px', fontWeight: 700 }}>Extracted Field Entities</h3>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
+              <h3 style={{ fontSize: '15px', fontWeight: 700, margin: 0 }}>Extracted Field Entities</h3>
+              <span
+                style={{
+                  fontSize: '11px',
+                  fontWeight: 700,
+                  letterSpacing: '0.5px',
+                  color: 'var(--status-warning)',
+                  background: 'rgba(245, 158, 11, 0.12)',
+                  border: '1px solid rgba(245, 158, 11, 0.3)',
+                  padding: '2px 8px',
+                  borderRadius: '4px'
+                }}
+              >
+                DEMO — OCR EXTRACTION SIMULATED
+              </span>
+            </div>
             {extractedData ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <div style={{ background: 'rgba(245, 158, 11, 0.08)', border: '1px solid rgba(245, 158, 11, 0.25)', padding: '8px 12px', borderRadius: '8px', fontSize: '11px', color: 'var(--text-secondary)' }}>
+                  <strong style={{ color: 'var(--status-warning)' }}>SIMULATED OCR DEMO:</strong> Uploaded file was not processed by a live OCR engine. Displaying sample reference extraction entities for demonstration.
+                </div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
                   <div style={{ background: 'var(--bg-card-alt)', padding: '8px', borderRadius: '6px' }}>
                     <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>PARCEL ID</span>
@@ -353,10 +372,10 @@ export default function AnalyticsAiModule() {
                   <CheckCircle size={18} style={{ color: 'var(--status-success)' }} />
                   <div>
                     <div style={{ fontSize: '12px', fontWeight: 700, color: 'var(--status-success)' }}>
-                      Entity Match Confirmed ({extractedData.confidence} Confidence)
+                      Simulated Entity Match ({extractedData.confidence} Confidence)
                     </div>
                     <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-                      Extracted deed fields match 100% with Punjab Land Records Jamabandi database.
+                      Demonstration deed fields aligned with reference Jamabandi schema.
                     </div>
                   </div>
                 </div>
