@@ -187,6 +187,18 @@ export default function GoogleMapView() {
     );
   }, [currentLocation?.id]);
 
+  const getParcelFillColor = useCallback((parcel, isSelected) => {
+    if (isSelected) return '#0284c7';
+    if (layers.zoning && parcel) {
+      const lu = ((parcel.land_use || '') + ' ' + (parcel.zoning || '')).toLowerCase();
+      if (lu.includes('commercial')) return '#9333ea';
+      if (lu.includes('green') || lu.includes('agri') || lu.includes('park') || lu.includes('forest')) return '#16a34a';
+      if (lu.includes('residential')) return '#0369a1';
+      return '#475569';
+    }
+    return '#0f172a';
+  }, [layers.zoning]);
+
   // ─── 5. Leaflet: Draw Cadastral Vector Overlay ─────────────────────────────
   useEffect(() => {
     if (!leafletMapRef.current) return;
@@ -208,12 +220,13 @@ export default function GoogleMapView() {
       .map((parcel) => {
         const coords = parcel.polygon.map((pt) => [pt.lat, pt.lng]);
         const isSelected = activeParcel && parcel.parcel_id === activeParcel.parcel_id;
+        const fillColor = getParcelFillColor(parcel, isSelected);
 
         const poly = L.polygon(coords, {
           color: isSelected ? '#38bdf8' : 'rgba(255,255,255,0.7)',
           weight: isSelected ? 3.5 : 1.2,
-          fillColor: isSelected ? '#0284c7' : '#0f172a',
-          fillOpacity: isSelected ? 0.45 : 0.22
+          fillColor: fillColor,
+          fillOpacity: isSelected ? 0.48 : (layers.zoning ? 0.38 : 0.22)
         });
 
         poly.on('click', () => {
@@ -221,11 +234,15 @@ export default function GoogleMapView() {
         });
 
         if (layers.labels) {
-          const labelText = isCitizen
-            ? parcel.parcel_id
-            : `${parcel.parcel_id}${parcel.land_use ? ` • ${parcel.land_use}` : ''}`;
+          const tooltipContent = `
+            <div style="font-size: 11px; line-height: 1.35; padding: 2px 4px; text-align: center;">
+              <div style="font-weight: 700; color: #ffffff;">${parcel.parcel_id}${!isCitizen && parcel.land_use ? ` • <span style="font-weight: 400; color: #94a3b8;">${parcel.land_use}</span>` : ''}</div>
+              <div class="parcel-tooltip-ulpin">${parcel.ulpin || ''}</div>
+              ${!isCitizen && parcel.area_display ? `<div style="font-size: 9.5px; color: #cbd5e1; margin-top: 1px;">Area: ${parcel.area_display}</div>` : ''}
+            </div>
+          `;
 
-          poly.bindTooltip(labelText, {
+          poly.bindTooltip(tooltipContent, {
             permanent: currentZoom >= 17 || (currentZoom >= 15 && isSelected),
             direction: 'center',
             className: 'parcel-map-tooltip'
@@ -261,30 +278,52 @@ export default function GoogleMapView() {
       map.off('zoomend', handleZoomProgressive);
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mapLoaded, useLeaflet, locationParcels, layers.parcels, layers.labels, currentRole]);
+  }, [mapLoaded, useLeaflet, locationParcels, layers.parcels, layers.labels, layers.zoning, currentRole, getParcelFillColor]);
 
-  // ─── 6. Leaflet: Update Polygon Selection State ───────────────────────────
+  // ─── 6. Leaflet: Update Polygon Selection State & Restrained Auto-Pan ──────
   useEffect(() => {
     if (!leafletMapRef.current) return;
 
     leafletPolygonsRef.current.forEach(({ id, poly }) => {
       const isSelected = activeParcel && id === activeParcel.parcel_id;
+      const targetParcel = locationParcels.find(p => p.parcel_id === id);
+      const fillColor = getParcelFillColor(targetParcel, isSelected);
+
       poly.setStyle({
         color: isSelected ? '#38bdf8' : 'rgba(255,255,255,0.7)',
         weight: isSelected ? 3.5 : 1.2,
-        fillColor: isSelected ? '#0284c7' : '#0f172a',
-        fillOpacity: isSelected ? 0.45 : 0.22
+        fillColor: fillColor,
+        fillOpacity: isSelected ? 0.48 : (layers.zoning ? 0.38 : 0.22)
       });
 
       if (poly.getTooltip()) {
         if (isSelected) {
           poly.openTooltip();
         } else {
-          poly.closeTooltip();
+          const z = leafletMapRef.current.getZoom ? leafletMapRef.current.getZoom() : 17;
+          if (z < 17) poly.closeTooltip();
         }
       }
     });
-  }, [activeParcel]);
+
+    // Restrained auto-pan on selection (preserves spatial context without disruptive zoom)
+    if (activeParcel && leafletMapRef.current) {
+      const activeObj = leafletPolygonsRef.current.find(item => item.id === activeParcel.parcel_id);
+      if (activeObj && activeObj.poly) {
+        const bounds = activeObj.poly.getBounds();
+        const mapBounds = leafletMapRef.current.getBounds();
+        if (mapBounds && !mapBounds.contains(bounds)) {
+          leafletMapRef.current.panTo(bounds.getCenter(), { animate: true, duration: 0.5 });
+        }
+      } else if (activeParcel.centroid_lat && activeParcel.centroid_lng) {
+        const center = [activeParcel.centroid_lat, activeParcel.centroid_lng];
+        const mapBounds = leafletMapRef.current.getBounds();
+        if (mapBounds && !mapBounds.contains(center)) {
+          leafletMapRef.current.panTo(center, { animate: true, duration: 0.5 });
+        }
+      }
+    }
+  }, [activeParcel, layers.zoning, getParcelFillColor, locationParcels]);
 
   // ─── 7. Google Maps: Draw / Redraw Cadastral Vector Overlay ────────────────
   useEffect(() => {
@@ -302,14 +341,15 @@ export default function GoogleMapView() {
       .filter((p) => p.polygon && p.polygon.length > 2)
       .map((parcel) => {
         const isSelected = activeParcel && parcel.parcel_id === activeParcel.parcel_id;
+        const fillColor = getParcelFillColor(parcel, isSelected);
 
         const poly = new google.maps.Polygon({
           paths: parcel.polygon,
           strokeColor: isSelected ? '#38bdf8' : 'rgba(255,255,255,0.6)',
           strokeOpacity: 0.9,
           strokeWeight: isSelected ? 3.5 : 1.2,
-          fillColor: isSelected ? '#0284c7' : '#0f172a',
-          fillOpacity: isSelected ? 0.38 : 0.22,
+          fillColor: fillColor,
+          fillOpacity: isSelected ? 0.45 : (layers.zoning ? 0.38 : 0.22),
           map,
           zIndex: isSelected ? 10 : 1,
           clickable: true
@@ -353,25 +393,29 @@ export default function GoogleMapView() {
 
     polygonRefs.current = created;
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mapLoaded, locationParcels, layers.parcels, layers.labels]);
+  }, [mapLoaded, locationParcels, layers.parcels, layers.labels, layers.zoning, getParcelFillColor]);
 
-  // ─── 8. Google Maps: Selection Styling Updates ────────────────────────────
+  // ─── 8. Google Maps: Selection Styling Updates & Restrained Auto-Pan ──────
   useEffect(() => {
     if (!mapLoaded || !window.google || !googleMapRef.current) return;
+    const map = googleMapRef.current;
 
     polygonRefs.current.forEach(({ id, poly }) => {
       const isSelected = activeParcel && id === activeParcel.parcel_id;
+      const targetParcel = locationParcels.find(p => p.parcel_id === id);
+      const fillColor = getParcelFillColor(targetParcel, isSelected);
+
       poly.setOptions({
         strokeColor: isSelected ? '#38bdf8' : 'rgba(255,255,255,0.6)',
         strokeWeight: isSelected ? 3.5 : 1.2,
-        fillColor: isSelected ? '#0284c7' : '#0f172a',
-        fillOpacity: isSelected ? 0.38 : 0.22,
+        fillColor: fillColor,
+        fillOpacity: isSelected ? 0.45 : (layers.zoning ? 0.38 : 0.22),
         zIndex: isSelected ? 10 : 1
       });
 
       if (poly._label) {
         if (isSelected) {
-          poly._label.setMap(googleMapRef.current);
+          poly._label.setMap(map);
           poly._isSelectedLabel = true;
         } else if (poly._isSelectedLabel) {
           poly._label.setMap(null);
@@ -379,8 +423,17 @@ export default function GoogleMapView() {
         }
       }
     });
+
+    if (activeParcel && map) {
+      if (activeParcel.centroid_lat && activeParcel.centroid_lng) {
+        const latLng = new window.google.maps.LatLng(activeParcel.centroid_lat, activeParcel.centroid_lng);
+        if (map.getBounds() && !map.getBounds().contains(latLng)) {
+          map.panTo(latLng);
+        }
+      }
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeParcel, mapLoaded]);
+  }, [activeParcel, mapLoaded, layers.zoning, getParcelFillColor, locationParcels]);
 
   // ─── 9. Google Maps: Location & MapType Updates ───────────────────────────
   useEffect(() => {
@@ -661,62 +714,79 @@ export default function GoogleMapView() {
                 checked={layers.zoning}
                 onChange={() => toggleLayer('zoning')}
               />
-              <span>Master Plan Zones</span>
+              <span>Master Plan Zones (Cadastral Overlay)</span>
             </label>
-            <label className="layer-checkbox-item">
+            <div className="layer-checkbox-item" style={{ opacity: 0.6, cursor: 'default' }}>
               <input
                 type="checkbox"
-                checked={layers.boundaries}
-                onChange={() => toggleLayer('boundaries')}
+                checked={false}
+                disabled
               />
-              <span>Administrative Boundaries</span>
-            </label>
+              <div>
+                <span>Administrative Boundaries</span>
+                <span style={{ display: 'block', fontSize: '9px', color: 'var(--text-muted)' }}>State GIS WFS • External Feed Offline</span>
+              </div>
+            </div>
 
-            <div className="layer-group-title">Other Layers</div>
-            <label className="layer-checkbox-item">
+            <div className="layer-group-title">Infrastructure &amp; Protected</div>
+            <div className="layer-checkbox-item" style={{ opacity: 0.6, cursor: 'default' }}>
               <input
                 type="checkbox"
-                checked={layers.utilities}
-                onChange={() => toggleLayer('utilities')}
+                checked={false}
+                disabled
               />
-              <span>Utilities Network</span>
-            </label>
-            <label className="layer-checkbox-item">
+              <div>
+                <span>Utilities Network</span>
+                <span style={{ display: 'block', fontSize: '9px', color: 'var(--text-muted)' }}>Municipal GIS • Inactive in Demo</span>
+              </div>
+            </div>
+            <div className="layer-checkbox-item" style={{ opacity: 0.6, cursor: 'default' }}>
               <input
                 type="checkbox"
-                checked={layers.protected}
-                onChange={() => toggleLayer('protected')}
+                checked={false}
+                disabled
               />
-              <span>Heritage / Protected</span>
-            </label>
+              <div>
+                <span>Heritage &amp; Protected Zones</span>
+                <span style={{ display: 'block', fontSize: '9px', color: 'var(--text-muted)' }}>ASI Registry • Standby</span>
+              </div>
+            </div>
           </div>
         )}
 
-        {/* Legend */}
+        {/* Legend - Synchronized with Active Layer Content */}
         <div className="map-legend">
-          <div className="legend-title">Legend</div>
+          <div className="legend-title">GIS Legend</div>
           <div className="legend-item">
             <span
               className="legend-color"
-              style={{ backgroundColor: 'var(--brand-accent-blue)', border: '1px solid #38bdf8' }}
+              style={{ backgroundColor: 'var(--brand-accent-blue)', border: '1.5px solid #38bdf8' }}
             />
             <span>Selected Parcel</span>
           </div>
           <div className="legend-item">
             <span
               className="legend-color"
-              style={{ backgroundColor: 'rgba(15,23,42,0.5)', border: '1px solid rgba(255,255,255,0.4)' }}
+              style={{ backgroundColor: 'rgba(15,23,42,0.5)', border: '1px solid rgba(255,255,255,0.7)' }}
             />
             <span>Cadastral Boundary</span>
           </div>
-          <div className="legend-item">
-            <span className="legend-color" style={{ backgroundColor: '#22c55e' }} />
-            <span>Green Belt</span>
-          </div>
-          <div className="legend-item">
-            <span className="legend-color" style={{ backgroundColor: '#a855f7' }} />
-            <span>Commercial Zone</span>
-          </div>
+          {layers.zoning && (
+            <>
+              <div className="legend-item">
+                <span className="legend-color" style={{ backgroundColor: '#0369a1' }} />
+                <span>Residential Zone</span>
+              </div>
+              <div className="legend-item">
+                <span className="legend-color" style={{ backgroundColor: '#9333ea' }} />
+                <span>Commercial Zone</span>
+              </div>
+              <div className="legend-item">
+                <span className="legend-color" style={{ backgroundColor: '#16a34a' }} />
+                <span>Green Belt / Eco</span>
+              </div>
+            </>
+          )}
         </div>
 
         {/* Scale Bar */}
