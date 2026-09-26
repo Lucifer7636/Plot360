@@ -17,8 +17,10 @@ _active_db_url = settings.DATABASE_URL
 def _build_engine():
     global _is_postgis, _active_db_url
 
-    # Check if primary PostgreSQL is reachable
-    if settings.DATABASE_URL.startswith("postgresql"):
+    # Check if primary PostgreSQL is reachable (skip localhost check in cloud/Render production)
+    is_cloud_prod = bool(os.environ.get("RENDER") or os.environ.get("PORT"))
+    is_localhost_pg = "localhost" in settings.DATABASE_URL or "127.0.0.1" in settings.DATABASE_URL
+    if settings.DATABASE_URL.startswith("postgresql") and not (is_cloud_prod and is_localhost_pg):
         try:
             test_engine = create_engine(
                 settings.DATABASE_URL,
@@ -35,10 +37,9 @@ def _build_engine():
                     _active_db_url = settings.DATABASE_URL
                     return test_engine
         except Exception as e:
-            logger.warning(
+            logger.info(
                 f"PostgreSQL/PostGIS at {settings.DATABASE_URL} is not available: {e}. "
-                f"Falling back to local SQLite development database ({settings.SQLITE_FALLBACK_URL}). "
-                f"Note: PostgreSQL/PostGIS is the authoritative production spatial engine."
+                f"Falling back to local SQLite database ({settings.SQLITE_FALLBACK_URL})."
             )
 
     # Local fallback
