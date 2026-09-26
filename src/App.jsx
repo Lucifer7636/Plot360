@@ -21,10 +21,17 @@ import './styles/layout.css';
 import './styles/components.css';
 
 function MainApp() {
-  const { activeModule, deviceMode, lightweightMode } = useApp();
+  const { activeModule, deviceMode, lightweightMode, sidebarMobileOpen, setSidebarMobileOpen } = useApp();
 
   return (
-    <div className={`app-shell mode-${deviceMode} ${lightweightMode ? 'mode-lightweight' : ''}`}>
+    <div className={`app-shell mode-${deviceMode} ${lightweightMode ? 'mode-lightweight' : ''} ${sidebarMobileOpen ? 'sidebar-mobile-open' : ''}`}>
+      {/* Mobile Drawer Backdrop */}
+      <div
+        className="sidebar-backdrop"
+        onClick={() => setSidebarMobileOpen(false)}
+        aria-hidden="true"
+      />
+
       {/* 1. Primary Left Sidebar */}
       <Sidebar />
 

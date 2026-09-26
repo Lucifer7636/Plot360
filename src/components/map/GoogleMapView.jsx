@@ -39,7 +39,8 @@ export default function GoogleMapView() {
     locationParcels,
     currentLocation,
     showLocationToast,
-    locationToast
+    locationToast,
+    currentRole
   } = useApp();
 
   const mapRef = useRef(null);
@@ -199,6 +200,9 @@ export default function GoogleMapView() {
     if (!layers.parcels) return;
 
     const map = leafletMapRef.current;
+    const isCitizen = currentRole === 'citizen';
+    const currentZoom = map.getZoom ? map.getZoom() : 17;
+
     const created = locationParcels
       .filter((p) => p.polygon && p.polygon.length > 2)
       .map((parcel) => {
@@ -217,8 +221,12 @@ export default function GoogleMapView() {
         });
 
         if (layers.labels) {
-          poly.bindTooltip(parcel.parcel_id, {
-            permanent: isSelected,
+          const labelText = isCitizen
+            ? parcel.parcel_id
+            : `${parcel.parcel_id}${parcel.land_use ? ` • ${parcel.land_use}` : ''}`;
+
+          poly.bindTooltip(labelText, {
+            permanent: currentZoom >= 17 || (currentZoom >= 15 && isSelected),
             direction: 'center',
             className: 'parcel-map-tooltip'
           });
@@ -228,9 +236,32 @@ export default function GoogleMapView() {
         return { id: parcel.parcel_id, poly };
       });
 
+    // Progressive zoom event handler
+    const handleZoomProgressive = () => {
+      if (!leafletMapRef.current) return;
+      const z = leafletMapRef.current.getZoom();
+      leafletPolygonsRef.current.forEach(({ id, poly }) => {
+        const isSelected = activeParcel && id === activeParcel.parcel_id;
+        if (!poly.getTooltip()) return;
+        if (z < 15) {
+          poly.closeTooltip();
+        } else if (z < 17) {
+          if (isSelected) poly.openTooltip();
+          else poly.closeTooltip();
+        } else {
+          if (layers.labels) poly.openTooltip();
+        }
+      });
+    };
+
+    map.on('zoomend', handleZoomProgressive);
+
     leafletPolygonsRef.current = created;
+    return () => {
+      map.off('zoomend', handleZoomProgressive);
+    };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mapLoaded, useLeaflet, locationParcels, layers.parcels, layers.labels]);
+  }, [mapLoaded, useLeaflet, locationParcels, layers.parcels, layers.labels, currentRole]);
 
   // ─── 6. Leaflet: Update Polygon Selection State ───────────────────────────
   useEffect(() => {
@@ -482,10 +513,30 @@ export default function GoogleMapView() {
           </div>
         )}
 
-        {/* Floating Top Left Pill */}
-        <div className="map-pill-top-left">
-          <span>Cadastral Parcels</span>
-          <X size={12} style={{ cursor: 'pointer' }} onClick={() => toggleLayer('parcels')} />
+        {/* Floating Top Left Pill with Cadastral Status */}
+        <div style={{ position: 'absolute', top: '10px', left: '10px', display: 'flex', flexDirection: 'column', gap: '5px', zIndex: 10 }}>
+          <div className="map-pill-top-left" style={{ position: 'static' }}>
+            <span>Cadastral Parcels</span>
+            <X size={12} style={{ cursor: 'pointer' }} onClick={() => toggleLayer('parcels')} />
+          </div>
+          <div
+            title="Internal Cadastral Classification"
+            style={{
+              fontSize: '9px',
+              fontWeight: 700,
+              letterSpacing: '0.04em',
+              padding: '2px 7px',
+              borderRadius: '4px',
+              backgroundColor: 'rgba(7, 16, 34, 0.88)',
+              border: '1px solid rgba(56, 189, 248, 0.3)',
+              color: 'var(--brand-accent-cyan, #38bdf8)',
+              width: 'fit-content',
+              boxShadow: '0 2px 6px rgba(0,0,0,0.4)',
+              backdropFilter: 'blur(4px)'
+            }}
+          >
+            ILLUSTRATIVE_DEMO_GEOMETRY
+          </div>
         </div>
 
         {/* Basemap Switcher Pills */}

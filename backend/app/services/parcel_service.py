@@ -121,15 +121,14 @@ def query_parcels(
 
 def build_unified_parcel_response(parcel: Parcel, db: Session, user_ctx: Optional[Any] = None) -> Dict[str, Any]:
     """Compiles the unified parcel record context with strict server-side RBAC field-level filtering."""
-    # Determine authorization capabilities - confidential departmental fields require officer or admin/auditor roles
-    is_admin = bool(user_ctx and user_ctx.has_role("administrator"))
-    is_auditor = bool(user_ctx and user_ctx.has_role("auditor"))
-    is_revenue = bool(user_ctx and (is_admin or is_auditor or "revenue_officer" in user_ctx.roles))
-    is_registration = bool(user_ctx and (is_admin or is_auditor or "registration_officer" in user_ctx.roles))
-    is_planning = bool(user_ctx and (is_admin or is_auditor or "planning_officer" in user_ctx.roles))
-    is_municipal = bool(user_ctx and (is_admin or is_auditor or "municipal_officer" in user_ctx.roles))
-    is_tax = bool(user_ctx and (is_admin or is_auditor or "tax_officer" in user_ctx.roles))
-    is_officer = is_admin or is_auditor or is_revenue or is_registration or is_planning or is_municipal or is_tax
+    user_roles = user_ctx.roles if user_ctx else []
+    is_admin = "administrator" in user_roles
+    is_auditor = "auditor" in user_roles
+    is_revenue = is_admin or is_auditor or "revenue_officer" in user_roles
+    is_registration = is_admin or is_auditor or "registration_officer" in user_roles
+    is_planning = is_admin or is_auditor or "planning_officer" in user_roles
+    is_municipal = is_admin or is_auditor or "municipal_officer" in user_roles
+    is_tax = is_admin or is_auditor or "tax_officer" in user_roles
 
     # Active Owner
     owner_rec = db.query(Ownership).filter(
@@ -156,7 +155,7 @@ def build_unified_parcel_response(parcel: Parcel, db: Session, user_ctx: Optiona
                 "approval_date": bp.approval_date
             }
         else:
-            # Public / Citizen view: only status is public
+            # Public / Citizen / Non-planning view: only status is public
             bp_dict = {
                 "id": bp.permission_id,
                 "status": bp.status
@@ -239,11 +238,21 @@ def build_unified_parcel_response(parcel: Parcel, db: Session, user_ctx: Optiona
                 "date2_label": alert.date2_label
             }
 
+    # Restricted Administrator / Auditor Metadata (Parts 27, 34, 35)
+    admin_metadata = None
+    if is_admin or is_auditor:
+        admin_metadata = {
+            "audit_hash": f"SHA256-AUDIT-{parcel.id}-0982",
+            "system_node": "PLOT360-CORE-PRIMARY",
+            "security_clearance": "RESTRICTED_OFFICER_AUDIT"
+        }
+
     coords = get_parcel_polygon_coords(parcel, db)
 
-    return {
+    resp = {
         "parcel_id": parcel.parcel_id,
         "ulpin": parcel.ulpin,
+        "cadastral_status": "ILLUSTRATIVE_DEMO_GEOMETRY",
         "survey_no": parcel.survey_no,
         "khata_no": parcel.khata_no,
         "khasra_no": parcel.khasra_no,
@@ -277,3 +286,8 @@ def build_unified_parcel_response(parcel: Parcel, db: Session, user_ctx: Optiona
         "ai_alert": alert_dict,
         "polygon": coords
     }
+
+    if admin_metadata:
+        resp["admin_metadata"] = admin_metadata
+
+    return resp

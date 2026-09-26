@@ -14,7 +14,8 @@ import {
   CheckCheck,
   Layers,
   Sparkles,
-  ShieldCheck
+  ShieldCheck,
+  Menu
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import HelpModal from './HelpModal';
@@ -52,7 +53,9 @@ export default function Topbar() {
     helpModalOpen,
     setHelpModalOpen,
     platformModalOpen,
-    setPlatformModalOpen
+    setPlatformModalOpen,
+    sidebarMobileOpen,
+    setSidebarMobileOpen
   } = useApp();
 
   const [roleDropdownOpen, setRoleDropdownOpen] = useState(false);
@@ -159,6 +162,16 @@ export default function Topbar() {
       <header className="topbar-container">
         {/* Topbar Left Controls */}
         <div className="topbar-left">
+          {/* Mobile Menu Hamburger Button */}
+          <button
+            className="mobile-menu-btn"
+            onClick={() => setSidebarMobileOpen(prev => !prev)}
+            aria-label="Toggle navigation menu"
+            title="Toggle Menu"
+          >
+            <Menu size={20} />
+          </button>
+
           {/* Platform Badge / Modal Trigger */}
           <div
             className="platform-badge"

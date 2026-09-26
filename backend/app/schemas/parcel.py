@@ -73,6 +73,7 @@ class ParcelSummary(BaseModel):
     zoning: Optional[str] = None
     jurisdiction: Optional[str] = None
     status: Optional[str] = "Verified"
+    cadastral_status: Optional[str] = "ILLUSTRATIVE_DEMO_GEOMETRY"
     sync_status: Optional[str] = "Synced"
     centroid_lat: Optional[float] = None
     centroid_lng: Optional[float] = None

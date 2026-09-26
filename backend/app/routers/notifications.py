@@ -20,8 +20,32 @@ def get_notifications(
     db: Session = Depends(get_db)
 ):
     q = db.query(Notification)
-    if user_ctx:
-        q = q.filter((Notification.user_id == user_ctx.id) | (Notification.user_id == None))
+
+    is_admin = bool(user_ctx and user_ctx.has_role("administrator"))
+    is_auditor = bool(user_ctx and user_ctx.has_role("auditor"))
+    is_officer = bool(user_ctx and (is_admin or is_auditor or any(
+        r in user_ctx.roles for r in [
+            "revenue_officer", "registration_officer", "planning_officer", "municipal_officer", "tax_officer"
+        ]
+    )))
+
+    if not is_officer:
+        # Citizens must NOT receive internal officer or system diagnostics (Part 43)
+        if user_ctx:
+            q = q.filter(
+                (Notification.user_id == user_ctx.id) |
+                ((Notification.user_id == None) & (Notification.notification_type.in_(["SERVICE_REQUEST", "CITIZEN", "INFO"])))
+            )
+        else:
+            q = q.filter(
+                (Notification.user_id == None) & (Notification.notification_type.in_(["SERVICE_REQUEST", "CITIZEN", "INFO"]))
+            )
+        q = q.filter(~Notification.notification_type.in_(["SYSTEM", "CONFLICT", "AI_ALERT", "VERIFICATION", "ADMIN"]))
+    else:
+        if user_ctx and not (is_admin or is_auditor):
+            # Targeted officer notifications
+            q = q.filter((Notification.user_id == user_ctx.id) | (Notification.user_id == None))
+
     notifications = q.order_by(Notification.created_at.desc()).limit(20).all()
 
     return [

@@ -107,17 +107,32 @@ export function AppProvider({ children }) {
   // Active Navigation Module
   const [activeModule, setActiveModule] = useState('explorer');
 
+  // Real Mobile Sidebar Drawer State
+  const [sidebarMobileOpen, setSidebarMobileOpen] = useState(false);
+
+  // Synchronized Parcels & Notifications State
+  const [backendParcels, setBackendParcels] = useState(DEMO_PARCELS);
+  const [notifications, setNotifications] = useState([
+    { id: '1', title: 'New Service Request', desc: 'Demarcation request filed for P-1026', time: '10m ago', unread: true },
+    { id: '2', title: 'AI Alert Requiring Review', desc: 'Potential new development flagged on P-1027', time: '1h ago', unread: true },
+    { id: '3', title: 'Data Conflict Assigned', desc: 'Area mismatch flagged between RoR and Tax for P-1028', time: '3h ago', unread: true }
+  ]);
+
   // Role Based Access Control with server-authenticated token
   const [currentRole, setCurrentRoleState] = useState('planning_officer');
 
   const setCurrentRole = (newRole) => {
     const canonicalRole = ROLE_ALIAS[newRole] || newRole;
     setCurrentRoleState(canonicalRole);
+
+    // Invalidate old role's sensitive notifications and cached state immediately (Parts 37, 38, 39)
+    setNotifications([]);
+
     const creds = ROLE_CREDENTIALS[canonicalRole];
     if (creds) {
       login(creds.username, creds.password)
         .then(() => {
-          // Re-fetch with authorized credentials
+          // Re-fetch authorized parcels
           getParcels({ location: selectedLocationId })
             .then(data => {
               if (Array.isArray(data) && data.length > 0) {
@@ -125,6 +140,8 @@ export function AppProvider({ children }) {
               }
             })
             .catch(() => {});
+
+          // Re-fetch authorized notifications
           getNotifications()
             .then(data => {
               if (Array.isArray(data)) {
@@ -237,13 +254,7 @@ export function AppProvider({ children }) {
   // Global Search state
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Notifications
-  const [notifications, setNotifications] = useState([
-    { id: '1', title: 'New Service Request', desc: 'Demarcation request filed for P-1026', time: '10m ago', unread: true },
-    { id: '2', title: 'AI Alert Requiring Review', desc: 'Potential new development flagged on P-1027', time: '1h ago', unread: true },
-    { id: '3', title: 'Data Conflict Assigned', desc: 'Area mismatch flagged between RoR and Tax for P-1028', time: '3h ago', unread: true }
-  ]);
-
+  // Notifications Handlers
   const handleMarkNotificationRead = (notifId) => {
     setNotifications(prev => prev.map(n => n.id === String(notifId) ? { ...n, unread: false } : n));
     apiMarkRead(notifId).catch(() => {});
@@ -255,7 +266,6 @@ export function AppProvider({ children }) {
   };
 
   // Synchronize parcels with backend
-  const [backendParcels, setBackendParcels] = useState(DEMO_PARCELS);
   useEffect(() => {
     let isMounted = true;
     getParcels({ location: selectedLocationId })
@@ -366,7 +376,9 @@ export function AppProvider({ children }) {
         markNotificationRead: handleMarkNotificationRead,
         markAllNotificationsRead: handleMarkAllNotificationsRead,
         kpiData: KPI_DATA,
-        parcels: backendParcels
+        parcels: backendParcels,
+        sidebarMobileOpen,
+        setSidebarMobileOpen
       }}
     >
       {children}

@@ -70,6 +70,7 @@ def list_parcels(
                 zoning=p.zoning,
                 jurisdiction=p.jurisdiction,
                 status=p.status or "Verified",
+                cadastral_status="ILLUSTRATIVE_DEMO_GEOMETRY",
                 sync_status=p.sync_status or "Synced",
                 centroid_lat=p.centroid_lat,
                 centroid_lng=p.centroid_lng,
@@ -97,6 +98,7 @@ def get_parcel_detail(
         return {
             "parcel_id": parcel.parcel_id,
             "ulpin": parcel.ulpin,
+            "cadastral_status": "ILLUSTRATIVE_DEMO_GEOMETRY",
             "survey_no": parcel.survey_no,
             "location": parcel.location,
             "state": parcel.state,

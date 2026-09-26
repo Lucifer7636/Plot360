@@ -1,11 +1,23 @@
-/* PLOT360 Master Layout Architecture - Application Shell First */
+/* PLOT360 Master Layout Architecture - True Multi-Device Responsive System */
+
+/* Root Shell: Never horizontally overflows */
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  max-width: 100vw;
+  overflow-x: hidden;
+  background-color: var(--bg-app);
+}
 
 .app-shell {
   display: flex;
   height: 100vh;
   width: 100vw;
+  max-width: 100vw;
   overflow: hidden;
   background-color: var(--bg-app);
+  position: relative;
 }
 
 /* Sidebar Shell */
@@ -18,8 +30,19 @@
   flex-direction: column;
   background-color: var(--bg-sidebar);
   border-right: 1px solid var(--border-subtle);
-  z-index: 20;
+  z-index: 30;
   user-select: none;
+  transition: width var(--transition-normal), transform var(--transition-normal);
+}
+
+/* Mobile Sidebar Backdrop */
+.sidebar-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(4px);
+  z-index: 25;
 }
 
 /* Main Application Column */
@@ -30,9 +53,10 @@
   height: 100%;
   min-width: 0;
   overflow: hidden;
+  position: relative;
 }
 
-/* Topbar Fixed Height */
+/* Topbar Fixed Height on Desktop */
 .topbar-container {
   height: 60px;
   min-height: 60px;
@@ -45,6 +69,22 @@
   padding: 0 16px;
   z-index: 15;
   gap: 16px;
+  max-width: 100%;
+}
+
+/* Mobile Menu Button (Hamburger) */
+.mobile-menu-btn {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-card);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  cursor: pointer;
+  flex-shrink: 0;
 }
 
 /* Page Scroll Area */
@@ -57,6 +97,8 @@
   padding: 12px 18px 16px;
   gap: 12px;
   min-height: 0;
+  max-width: 100%;
+  -webkit-overflow-scrolling: touch;
 }
 
 /* Page Header */
@@ -65,17 +107,19 @@
   flex-direction: column;
   gap: 3px;
   flex-shrink: 0;
+  max-width: 100%;
 }
 
-/* 5-Column KPI Strip */
+/* 5-Column KPI Strip (Desktop) */
 .kpi-strip-container {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 10px;
   flex-shrink: 0;
+  max-width: 100%;
 }
 
-/* Main Workspace: Strictly Constrained Grid (Map + Parcel Details) */
+/* Main Workspace: Constrained Grid (Map + Parcel Details) */
 .workspace-container {
   flex: 1;
   display: grid;
@@ -83,6 +127,7 @@
   gap: 12px;
   min-height: 480px;
   align-items: stretch;
+  max-width: 100%;
 }
 
 /* Map Wrapper: NEVER controls page height, bounded to workspace */
@@ -118,6 +163,7 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  max-width: 100%;
 }
 
 /* Quick Actions Bottom Bar */
@@ -131,27 +177,277 @@
   justify-content: space-between;
   gap: 10px;
   flex-shrink: 0;
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
-/* Device simulation modes */
+/* Table Responsive Container: Prevents entire page from expanding */
+.table-responsive-container {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Safe word wrapping for long parcel ULPIN strings */
+.ulpin-text, .panel-ulpin, .popup-ulpin {
+  word-break: break-all;
+  overflow-wrap: anywhere;
+}
+
+/* ==========================================================================
+   REAL TABLET RESPONSIVE SYSTEM (768px – 1023px)
+   ========================================================================== */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .sidebar-container {
+    width: 72px;
+    min-width: 72px;
+    max-width: 72px;
+  }
+  .sidebar-label, .sidebar-brand-text {
+    display: none;
+  }
+  .sidebar-header {
+    justify-content: center;
+    padding: 14px 6px;
+  }
+  .nav-item {
+    justify-content: center;
+    padding: 10px 0;
+  }
+  .workspace-container {
+    grid-template-columns: minmax(0, 1fr) 310px;
+    gap: 10px;
+  }
+  .parcel-panel-container {
+    width: 310px;
+    min-width: 310px;
+  }
+  .kpi-strip-container {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+  }
+  .topbar-container {
+    padding: 0 12px;
+    gap: 10px;
+  }
+}
+
+/* ==========================================================================
+   REAL MOBILE RESPONSIVE SYSTEM (320px – 767px)
+   ========================================================================== */
+@media (max-width: 767px) {
+  /* Mobile Menu Button appears */
+  .mobile-menu-btn {
+    display: flex;
+  }
+
+  .mobile-close-btn {
+    display: block !important;
+  }
+
+  /* Sidebar becomes off-canvas drawer */
+  .sidebar-container {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: 260px;
+    min-width: 260px;
+    max-width: 80vw;
+    z-index: 1000;
+    transform: translateX(-100%);
+    box-shadow: none;
+    border-right: 1px solid var(--border-card);
+  }
+
+  /* When mobile drawer is opened */
+  .app-shell.sidebar-mobile-open .sidebar-container {
+    transform: translateX(0);
+    box-shadow: 0 0 50px rgba(0, 0, 0, 0.8);
+  }
+
+  .app-shell.sidebar-mobile-open .sidebar-backdrop {
+    display: block;
+  }
+
+  /* Topbar adapts to mobile */
+  .topbar-container {
+    height: auto;
+    min-height: 54px;
+    max-height: none;
+    padding: 6px 10px;
+    gap: 6px;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .topbar-left {
+    gap: 8px;
+    flex-shrink: 0;
+  }
+
+  .platform-badge {
+    display: none;
+  }
+
+  .topbar-center {
+    flex: 1;
+    min-width: 140px;
+    max-width: 240px;
+  }
+
+  .topbar-right {
+    gap: 6px;
+    flex-shrink: 0;
+  }
+
+  /* Page Scroll Area */
+  .page-scroll-area {
+    padding: 8px 10px 14px;
+    gap: 10px;
+    overflow-x: hidden;
+  }
+
+  /* 2-Column KPI Strip on Mobile */
+  .kpi-strip-container {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  /* Workspace becomes a natural vertical stack */
+  .workspace-container {
+    display: flex;
+    flex-direction: column;
+    min-height: auto;
+    gap: 12px;
+    width: 100%;
+  }
+
+  /* Map occupies upper viewport segment */
+  .map-wrapper {
+    min-height: 330px;
+    height: 44vh;
+    max-height: 480px;
+    width: 100%;
+    border-radius: var(--radius-md);
+  }
+
+  /* Floating elements on mobile map */
+  .map-pill-top-left {
+    top: 8px;
+    left: 8px;
+    padding: 4px 8px;
+    font-size: 11px;
+  }
+
+  .map-basemap-toggle {
+    top: 8px;
+    right: 8px;
+  }
+
+  .basemap-btn {
+    padding: 3px 8px;
+    font-size: 10.5px;
+  }
+
+  .map-toolbar {
+    right: 8px;
+    top: 48px;
+  }
+
+  .map-tool-btn {
+    width: 32px;
+    height: 32px;
+  }
+
+  .map-legend {
+    bottom: 8px;
+    right: 8px;
+    padding: 6px 10px;
+    font-size: 10px;
+    max-width: 140px;
+  }
+
+  .map-scale {
+    bottom: 8px;
+    left: 8px;
+  }
+
+  /* Parcel Details Panel expands to full width below map */
+  .parcel-panel-container {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    height: auto;
+    min-height: 420px;
+    border-radius: var(--radius-md);
+  }
+
+  .quick-status-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+  }
+
+  .quick-actions-container {
+    flex-wrap: wrap;
+    padding: 8px 10px;
+    gap: 6px;
+  }
+}
+
+/* Very narrow devices (iPhone SE / 320px–360px) */
+@media (max-width: 360px) {
+  .kpi-strip-container {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+
+  .quick-status-grid {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+
+  .topbar-container {
+    padding: 4px 6px;
+  }
+}
+
+/* ==========================================================================
+   MANUAL DEVICE SIMULATION MODES (Preserved for desktop toolbar controls)
+   ========================================================================== */
 .app-shell.mode-tablet .sidebar-container {
   width: 72px;
   min-width: 72px;
 }
-.app-shell.mode-tablet .sidebar-label {
+.app-shell.mode-tablet .sidebar-label,
+.app-shell.mode-tablet .sidebar-brand-text {
   display: none;
 }
 .app-shell.mode-tablet .workspace-container {
-  grid-template-columns: minmax(0, 1fr) 320px;
+  grid-template-columns: minmax(0, 1fr) 310px;
 }
 
 .app-shell.mode-mobile .sidebar-container {
   display: none;
 }
 .app-shell.mode-mobile .workspace-container {
-  grid-template-columns: 1fr;
   display: flex;
   flex-direction: column;
+  width: 100%;
+}
+.app-shell.mode-mobile .map-wrapper {
+  min-height: 330px;
+  height: 44vh;
+  width: 100%;
+}
+.app-shell.mode-mobile .parcel-panel-container {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  height: auto;
 }
 .app-shell.mode-mobile .kpi-strip-container {
   grid-template-columns: repeat(2, 1fr);

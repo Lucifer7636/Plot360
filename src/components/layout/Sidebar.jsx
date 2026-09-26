@@ -11,12 +11,18 @@ import {
   Activity,
   Tv,
   HelpCircle,
-  User
+  User,
+  X
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 
 export default function Sidebar() {
-  const { activeModule, setActiveModule, t, setHelpModalOpen } = useApp();
+  const { activeModule, setActiveModule, t, setHelpModalOpen, setSidebarMobileOpen } = useApp();
+
+  const handleNavClick = (id) => {
+    setActiveModule(id);
+    setSidebarMobileOpen(false);
+  };
 
   const navItems = [
     { id: 'explorer', label: 'Land Explorer', icon: LayoutGrid },
@@ -33,7 +39,7 @@ export default function Sidebar() {
   return (
     <aside className="sidebar-container">
       {/* Brand Header */}
-      <div className="sidebar-header">
+      <div className="sidebar-header" style={{ position: 'relative' }}>
         <img src="/logo.png" alt="PLOT360" className="sidebar-logo" />
         <div className="sidebar-brand-text">
           <div className="sidebar-brand-title">
@@ -41,6 +47,28 @@ export default function Sidebar() {
           </div>
           <div className="sidebar-brand-tagline">From Boundaries to Insights</div>
         </div>
+
+        {/* Mobile Close Button */}
+        <button
+          className="mobile-close-btn"
+          onClick={() => setSidebarMobileOpen(false)}
+          title="Close Navigation Menu"
+          aria-label="Close Menu"
+          style={{
+            display: 'none',
+            position: 'absolute',
+            right: '12px',
+            top: '50%',
+            transform: 'translateY(-50%)',
+            background: 'transparent',
+            border: 'none',
+            color: 'var(--text-secondary)',
+            cursor: 'pointer',
+            padding: '4px'
+          }}
+        >
+          <X size={20} />
+        </button>
       </div>
 
       {/* Primary Navigation */}
@@ -52,7 +80,7 @@ export default function Sidebar() {
             <button
               key={item.id}
               className={`nav-item ${isActive ? 'active' : ''}`}
-              onClick={() => setActiveModule(item.id)}
+              onClick={() => handleNavClick(item.id)}
               title={t ? t('nav.' + item.id, item.label) : item.label}
             >
               <Icon className="nav-item-icon" />
@@ -66,7 +94,7 @@ export default function Sidebar() {
       <div className="sidebar-footer">
         <button
           className={`nav-item ${activeModule === 'presentation' ? 'active' : ''}`}
-          onClick={() => setActiveModule('presentation')}
+          onClick={() => handleNavClick('presentation')}
           title={t ? t('nav.presentation', 'Presentation Mode') : 'Presentation Mode'}
         >
           <Tv className="nav-item-icon" />
@@ -74,7 +102,7 @@ export default function Sidebar() {
         </button>
         <button
           className="nav-item"
-          onClick={() => setHelpModalOpen(true)}
+          onClick={() => { setHelpModalOpen(true); setSidebarMobileOpen(false); }}
           title={t ? t('nav.help', 'Help') : 'Help'}
         >
           <HelpCircle className="nav-item-icon" />
@@ -82,7 +110,7 @@ export default function Sidebar() {
         </button>
         <button
           className="nav-item"
-          onClick={() => setActiveModule('admin')}
+          onClick={() => handleNavClick('admin')}
           title={t ? t('nav.profile', 'User Profile') : 'User Profile'}
         >
           <User className="nav-item-icon" />
