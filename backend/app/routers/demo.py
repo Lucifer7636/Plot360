@@ -14,6 +14,12 @@ from app.auth.rbac import (
     require_permission,
     AuthenticatedUserContext
 )
+from app.auth.field_filter import (
+    can_access_building_details,
+    can_access_encumbrance_details,
+    can_access_tax_details,
+    can_access_ai_internal_notes
+)
 from app.schemas.demo import (
     DemoSessionCreate,
     DemoSessionOut,
@@ -146,6 +152,47 @@ def list_demo_locations(
     return get_demo_locations(state=state, urban_rural=urban_rural, location=location)
 
 
+def _filter_demo_parcel_components(p: dict, user_ctx: Optional[AuthenticatedUserContext], sentinel_avail: bool):
+    """Applies strict P0 field-level RBAC filtering to demo parcel components."""
+    raw_bp = p.get("bp")
+    if raw_bp:
+        if can_access_building_details(user_ctx):
+            bp_filtered = raw_bp
+        else:
+            bp_filtered = {"id": raw_bp.get("id"), "status": raw_bp.get("status")}
+    else:
+        bp_filtered = None
+
+    raw_enc = p.get("enc")
+    if raw_enc:
+        if can_access_encumbrance_details(user_ctx):
+            enc_filtered = raw_enc
+        else:
+            enc_filtered = {"status": raw_enc.get("status")}
+    else:
+        enc_filtered = None
+
+    raw_tax = p.get("tax")
+    if raw_tax:
+        if can_access_tax_details(user_ctx):
+            tax_filtered = raw_tax
+        else:
+            tax_filtered = {"id": raw_tax.get("id"), "status": raw_tax.get("status")}
+    else:
+        tax_filtered = None
+
+    raw_ai = p.get("ai_alert") if sentinel_avail else None
+    if raw_ai:
+        if can_access_ai_internal_notes(user_ctx):
+            ai_filtered = raw_ai
+        else:
+            ai_filtered = {k: v for k, v in raw_ai.items() if k not in ["notes", "confidence"]}
+    else:
+        ai_filtered = None
+
+    return bp_filtered, enc_filtered, tax_filtered, ai_filtered
+
+
 @router.get("/parcels", response_model=List[DemoParcelDetailOut], summary="List curated demo parcels across India")
 def list_demo_parcels(
     location: Optional[str] = Query(None, description="Location ID e.g. chandigarh, delhi, bengaluru"),
@@ -158,7 +205,7 @@ def list_demo_parcels(
 ):
     """
     Phase 7: GET /api/v1/demo/parcels
-    Returns curated demo parcels. Sanitizes internal audit metadata for unauthenticated or citizen callers.
+    Returns curated demo parcels. Sanitizes internal audit metadata and sensitive fields for unauthenticated or citizen callers.
     """
     raw_parcels = get_demo_parcels(
         location=location,
@@ -181,6 +228,10 @@ def list_demo_parcels(
         audit_note = "Logged to PLOT360 audit ledger." if is_officer_or_admin else None
         sentinel_avail = p.get("sentinel_available", False)
         sentinel_stat = "ACTIVE_MONITORING" if sentinel_avail else "NOT_AVAILABLE"
+
+        bp_filtered, enc_filtered, tax_filtered, ai_filtered = _filter_demo_parcel_components(
+            p, user_ctx, sentinel_avail
+        )
 
         results.append(DemoParcelDetailOut(
             parcel_id=p["parcel_id"],
@@ -206,12 +257,12 @@ def list_demo_parcels(
             centroid_lng=p["centroid_lng"],
             polygon=p["coords"],
             owner=p.get("owner"),
-            building_permission=p.get("bp"),
-            encumbrance=p.get("enc"),
-            property_tax=p.get("tax"),
+            building_permission=bp_filtered,
+            encumbrance=enc_filtered,
+            property_tax=tax_filtered,
             utilities=p.get("ut"),
             restrictions=None,
-            ai_alert=p.get("ai_alert") if sentinel_avail else None,
+            ai_alert=ai_filtered,
             is_demo_data=True,
             audit_notes=audit_note
         ))
@@ -245,6 +296,10 @@ def get_demo_parcel(
     sentinel_stat = "ACTIVE_MONITORING" if sentinel_avail else "NOT_AVAILABLE"
     audit_note = "Logged to PLOT360 audit ledger." if is_officer_or_admin else None
 
+    bp_filtered, enc_filtered, tax_filtered, ai_filtered = _filter_demo_parcel_components(
+        p, user_ctx, sentinel_avail
+    )
+
     return DemoParcelDetailOut(
         parcel_id=p["parcel_id"],
         ulpin=p["ulpin"],
@@ -269,12 +324,12 @@ def get_demo_parcel(
         centroid_lng=p["centroid_lng"],
         polygon=p["coords"],
         owner=p.get("owner"),
-        building_permission=p.get("bp"),
-        encumbrance=p.get("enc"),
-        property_tax=p.get("tax"),
+        building_permission=bp_filtered,
+        encumbrance=enc_filtered,
+        property_tax=tax_filtered,
         utilities=p.get("ut"),
         restrictions=None,
-        ai_alert=p.get("ai_alert") if sentinel_avail else None,
+        ai_alert=ai_filtered,
         is_demo_data=True,
         audit_notes=audit_note
     )

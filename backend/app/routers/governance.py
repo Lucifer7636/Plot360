@@ -16,6 +16,12 @@ from app.schemas.governance import (
 )
 from app.schemas.parcel import OwnerSummary
 from app.services.parcel_service import get_parcel_by_ulpin_or_id
+from app.dependencies import get_current_user_optional, AuthenticatedUserContext
+from app.auth.field_filter import (
+    filter_encumbrance_record,
+    filter_mortgage_record,
+    can_access_encumbrance_details
+)
 
 router = APIRouter(prefix="/parcels", tags=["Governance"])
 
@@ -104,28 +110,32 @@ def get_registration(
     return db.query(Registration).filter(Registration.parcel_id == parcel.id).all()
 
 
-@router.get("/{ulpin}/encumbrance", response_model=List[EncumbranceOut], summary="Encumbrances and charge records")
+@router.get("/{ulpin}/encumbrance", summary="Encumbrances and charge records")
 def get_encumbrance(
     ulpin: str = Path(..., description="Canonical ULPIN or parcel_id"),
+    user_ctx: Optional[AuthenticatedUserContext] = Depends(get_current_user_optional),
     db: Session = Depends(get_db)
 ):
     parcel = get_parcel_by_ulpin_or_id(ulpin, db)
     if not parcel:
         raise HTTPException(status_code=404, detail=f"Parcel not found: '{ulpin}'")
 
-    return db.query(Encumbrance).filter(Encumbrance.parcel_id == parcel.id).all()
+    encs = db.query(Encumbrance).filter(Encumbrance.parcel_id == parcel.id).all()
+    return [filter_encumbrance_record(e, user_ctx) for e in encs]
 
 
-@router.get("/{ulpin}/mortgage", response_model=List[MortgageOut], summary="Mortgages and bank liens")
+@router.get("/{ulpin}/mortgage", summary="Mortgages and bank liens")
 def get_mortgage(
     ulpin: str = Path(..., description="Canonical ULPIN or parcel_id"),
+    user_ctx: Optional[AuthenticatedUserContext] = Depends(get_current_user_optional),
     db: Session = Depends(get_db)
 ):
     parcel = get_parcel_by_ulpin_or_id(ulpin, db)
     if not parcel:
         raise HTTPException(status_code=404, detail=f"Parcel not found: '{ulpin}'")
 
-    return db.query(Mortgage).filter(Mortgage.parcel_id == parcel.id).all()
+    morts = db.query(Mortgage).filter(Mortgage.parcel_id == parcel.id).all()
+    return [filter_mortgage_record(m, user_ctx) for m in morts]
 
 
 @router.get("/{ulpin}/disputes", response_model=List[DisputeOut], summary="Court and revenue tribunal disputes")
@@ -182,14 +192,17 @@ def get_provenance(
     return provenance_list
 
 
-@router.get("/{ulpin}/liabilities", response_model=LiabilitiesSummaryOut, summary="Aggregated legal and financial liabilities")
+@router.get("/{ulpin}/liabilities", summary="Aggregated legal and financial liabilities")
 def get_parcel_liabilities(
     ulpin: str = Path(..., description="Canonical ULPIN or parcel_id"),
+    user_ctx: Optional[AuthenticatedUserContext] = Depends(get_current_user_optional),
     db: Session = Depends(get_db)
 ):
     """
     Section 17: Unified liabilities dossier aggregating encumbrances, registered mortgages,
     court/tribunal disputes, and municipal tax dues status.
+    Protected fields (e.g. loan_amount, institution, mortgage amount) are omitted server-side
+    for unauthorized users.
     """
     parcel = get_parcel_by_ulpin_or_id(ulpin, db)
     if not parcel:
@@ -213,17 +226,30 @@ def get_parcel_liabilities(
     else:
         liability_status = "CLEAR"
 
-    return LiabilitiesSummaryOut(
-        parcel_id=parcel.parcel_id,
-        ulpin=parcel.ulpin,
-        liability_status=liability_status,
-        total_liabilities_count=total_liabilities,
-        active_encumbrances_count=len(active_encs),
-        active_mortgages_count=len(active_morts),
-        active_disputes_count=len(active_disps),
-        encumbrances=encs,
-        mortgages=morts,
-        disputes=disps,
-        tax_dues_status=pt.status if pt else "PAID",
-        legal_advisory="Analytical summary of registered charges. Absence of recorded encumbrance does not constitute legal title warranty."
-    )
+    return {
+        "parcel_id": parcel.parcel_id,
+        "ulpin": parcel.ulpin,
+        "liability_status": liability_status,
+        "total_liabilities_count": total_liabilities,
+        "active_encumbrances_count": len(active_encs),
+        "active_mortgages_count": len(active_morts),
+        "active_disputes_count": len(active_disps),
+        "encumbrances": [filter_encumbrance_record(e, user_ctx) for e in encs],
+        "mortgages": [filter_mortgage_record(m, user_ctx) for m in morts],
+        "disputes": [
+            {
+                "id": d.id,
+                "ulpin": d.ulpin,
+                "dispute_id": d.dispute_id,
+                "category": d.category,
+                "filed_date": d.filed_date,
+                "status": d.status,
+                "current_stage": d.current_stage,
+                "responsible_authority": d.responsible_authority,
+                "last_updated": d.last_updated
+            }
+            for d in disps
+        ],
+        "tax_dues_status": pt.status if pt else "PAID",
+        "legal_advisory": "Analytical summary of registered charges. Absence of recorded encumbrance does not constitute legal title warranty."
+    }

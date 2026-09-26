@@ -30,6 +30,50 @@ const ROLE_ALIAS = {
   auditor: 'auditor'
 };
 
+/**
+ * P0.1 Centralized sanitization for local demo parcel data.
+ * Prevents client-side hydration race conditions from exposing confidential fields
+ * to unauthorized / citizen users before server-side authoritative response resolves.
+ */
+export function sanitizeDemoParcel(parcel, role) {
+  if (!parcel) return null;
+  const canonicalRole = ROLE_ALIAS[role] || role;
+
+  // Fail closed if unauthenticated, unknown, or citizen
+  const isPrivileged = Boolean(canonicalRole && canonicalRole !== 'citizen');
+  const canEnc = isPrivileged && ['revenue_officer', 'registration_officer', 'administrator', 'auditor'].includes(canonicalRole);
+  const canBp = isPrivileged && ['planning_officer', 'municipal_officer', 'administrator', 'auditor'].includes(canonicalRole);
+  const canTax = isPrivileged && ['tax_officer', 'municipal_officer', 'administrator', 'auditor'].includes(canonicalRole);
+
+  const sanitized = { ...parcel };
+
+  if (sanitized.enc) {
+    if (canEnc) {
+      sanitized.enc = { ...sanitized.enc };
+    } else {
+      sanitized.enc = { status: sanitized.enc.status };
+    }
+  }
+
+  if (sanitized.bp) {
+    if (canBp) {
+      sanitized.bp = { ...sanitized.bp };
+    } else {
+      sanitized.bp = { id: sanitized.bp.id, status: sanitized.bp.status };
+    }
+  }
+
+  if (sanitized.tax) {
+    if (canTax) {
+      sanitized.tax = { ...sanitized.tax };
+    } else {
+      sanitized.tax = { id: sanitized.tax.id, status: sanitized.tax.status };
+    }
+  }
+
+  return sanitized;
+}
+
 export function AppProvider({ children }) {
   // Centralized Location & Jurisdiction State
   const [selectedLocationId, setSelectedLocationId] = useState('chandigarh');
@@ -37,9 +81,29 @@ export function AppProvider({ children }) {
   const selectedLocation = currentLocation.name;
   const [selectedJurisdiction, setSelectedJurisdiction] = useState(currentLocation.jurisdiction);
 
+  // Role Based Access Control with server-authenticated token
+  const [currentRole, setCurrentRoleState] = useState('planning_officer');
+
   // Active Parcel (P-1027 is default selected parcel as required)
   const [activeParcelId, setActiveParcelId] = useState('P-1027');
-  const activeParcel = activeParcelId ? (DEMO_PARCELS.find(p => p.parcel_id === activeParcelId) || null) : null;
+  const [serverParcelData, setServerParcelData] = useState(null);
+
+  const fetchActiveParcelDetail = useCallback((targetId) => {
+    if (!targetId) return;
+    getParcelByUlpin(targetId)
+      .then(detail => {
+        if (detail && (detail.parcel_id || detail.ulpin)) {
+          setServerParcelData(detail);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const rawDemoParcel = activeParcelId ? (DEMO_PARCELS.find(p => p.parcel_id === activeParcelId) || null) : null;
+  const baseDemoParcel = rawDemoParcel ? sanitizeDemoParcel(rawDemoParcel, currentRole) : null;
+  const activeParcel = serverParcelData && (serverParcelData.parcel_id === activeParcelId || serverParcelData.ulpin === activeParcelId)
+    ? { ...baseDemoParcel, ...serverParcelData }
+    : baseDemoParcel;
   const activeULPIN = activeParcel ? activeParcel.ulpin : '';
 
   // In-map notification / toast for geolocation and search feedback
@@ -89,11 +153,13 @@ export function AppProvider({ children }) {
   const selectParcel = (parcelId) => {
     if (!parcelId) {
       setActiveParcelId(null);
+      setServerParcelData(null);
       return;
     }
     const found = DEMO_PARCELS.find(p => p.parcel_id === parcelId || p.ulpin === parcelId);
     if (found) {
       setActiveParcelId(found.parcel_id);
+      fetchActiveParcelDetail(found.parcel_id);
       if (found.location_id && found.location_id !== selectedLocationId) {
         const targetLoc = DEMO_LOCATIONS.find(l => l.id === found.location_id);
         if (targetLoc) {
@@ -118,8 +184,7 @@ export function AppProvider({ children }) {
     { id: '3', title: 'Data Conflict Assigned', desc: 'Area mismatch flagged between RoR and Tax for P-1028', time: '3h ago', unread: true }
   ]);
 
-  // Role Based Access Control with server-authenticated token
-  const [currentRole, setCurrentRoleState] = useState('planning_officer');
+  // Role Based Access Control handler
 
   const setCurrentRole = (newRole) => {
     const canonicalRole = ROLE_ALIAS[newRole] || newRole;
@@ -127,11 +192,17 @@ export function AppProvider({ children }) {
 
     // Invalidate old role's sensitive notifications and cached state immediately (Parts 37, 38, 39)
     setNotifications([]);
+    setServerParcelData(null);
 
     const creds = ROLE_CREDENTIALS[canonicalRole];
     if (creds) {
       login(creds.username, creds.password)
         .then(() => {
+          // Re-fetch authorized parcel detail under the newly authenticated role
+          if (activeParcelId) {
+            fetchActiveParcelDetail(activeParcelId);
+          }
+
           // Re-fetch authorized parcels
           getParcels({ location: selectedLocationId })
             .then(data => {
@@ -166,7 +237,11 @@ export function AppProvider({ children }) {
   useEffect(() => {
     const creds = ROLE_CREDENTIALS[currentRole] || ROLE_CREDENTIALS['planning_officer'];
     if (creds) {
-      login(creds.username, creds.password).catch(() => {});
+      login(creds.username, creds.password)
+        .then(() => {
+          fetchActiveParcelDetail(activeParcelId);
+        })
+        .catch(() => {});
     }
   }, []);
 

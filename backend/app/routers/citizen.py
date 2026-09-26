@@ -17,6 +17,7 @@ from app.models.user import AuditLog
 from app.schemas.citizen import ServiceRequestIn, ServiceRequestOut
 from app.services.workflow_service import init_workflow_for_request
 from app.dependencies import get_current_user_optional, AuthenticatedUserContext
+from app.auth.field_filter import filter_service_request_record
 
 router = APIRouter(prefix="/citizen", tags=["Citizen Services"])
 
@@ -34,6 +35,7 @@ DEPARTMENT_MAPPINGS = {
 def list_service_requests(
     ulpin: Optional[str] = Query(None, description="Filter by ULPIN"),
     limit: int = Query(50, ge=1, le=100),
+    user_ctx: Optional[AuthenticatedUserContext] = Depends(get_current_user_optional),
     db: Session = Depends(get_db)
 ):
     q = db.query(ServiceRequest)
@@ -41,24 +43,7 @@ def list_service_requests(
         clean = ulpin.strip()
         q = q.filter((ServiceRequest.ulpin == clean) | (ServiceRequest.request_id == clean))
     records = q.order_by(ServiceRequest.created_at.desc()).limit(limit).all()
-    return [
-        {
-            "id": r.id,
-            "request_id": r.request_id,
-            "ulpin": r.ulpin,
-            "service_type": r.service_type,
-            "department": r.department,
-            "applicant_name": r.applicant_name,
-            "applicant_phone": r.applicant_phone,
-            "applicant_email": r.applicant_email,
-            "status": r.status,
-            "current_step": r.current_step,
-            "total_steps": r.total_steps,
-            "notes": r.notes,
-            "created_at": r.created_at.isoformat() if r.created_at else None
-        }
-        for r in records
-    ]
+    return [filter_service_request_record(r, user_ctx) for r in records]
 
 
 @router.post("/service-requests", summary="Submit a new citizen service request")

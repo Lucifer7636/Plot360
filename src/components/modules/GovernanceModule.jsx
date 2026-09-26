@@ -58,9 +58,9 @@ export default function GovernanceModule() {
 
   const ownerName = activeParcel.owner?.name || 'Authorized Rights Holder';
   const encStatus = activeParcel.enc?.status || activeParcel.encumbrance?.status || 'Clear';
-  const encInst = activeParcel.enc?.inst || activeParcel.encumbrance?.institution || 'HDFC Bank Ltd.';
-  const encAmt = activeParcel.enc?.amt || activeParcel.encumbrance?.amount || '₹ 45,00,000';
-  const encRef = activeParcel.enc?.ref || activeParcel.encumbrance?.reference || 'MORT-2023-098';
+  const encInst = activeParcel.enc?.inst || activeParcel.encumbrance?.institution || (encStatus === 'Active' ? 'Restricted / Officer Access Only' : 'None (No active lien)');
+  const encAmt = activeParcel.enc?.amt || activeParcel.encumbrance?.amount || (encStatus === 'Active' ? 'Restricted / Officer Access Only' : '₹ 0.00');
+  const encRef = activeParcel.enc?.ref || activeParcel.encumbrance?.reference || (encStatus === 'Active' ? 'Restricted / Officer Access Only' : 'N/A');
 
   return (
     <div className="page-scroll-area">

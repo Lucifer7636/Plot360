@@ -23,6 +23,7 @@ from app.services.parcel_service import (
 )
 
 from app.dependencies import get_current_user_optional, AuthenticatedUserContext
+from app.auth.field_filter import can_access_building_details, can_access_tax_details
 
 router = APIRouter(prefix="/parcels", tags=["Parcels"])
 
@@ -154,6 +155,7 @@ def get_parcel_geometry(
 @router.get("/{ulpin}/timeline", response_model=List[TimelineEventOut], summary="Get chronological multi-source timeline")
 def get_parcel_timeline(
     ulpin: str = Path(..., description="Canonical ULPIN or parcel_id"),
+    user_ctx: Optional[AuthenticatedUserContext] = Depends(get_current_user_optional),
     db: Session = Depends(get_db)
 ):
     """Section 134: Chronological history across Cadastre, RoR, Registration, Building, Tax, AI."""
@@ -209,13 +211,17 @@ def get_parcel_timeline(
     # 4. Building permission
     bps = db.query(BuildingPermission).filter(BuildingPermission.parcel_id == parcel.id).all()
     for b in bps:
+        if can_access_building_details(user_ctx):
+            bp_desc = f"Sanction for {b.floors or 'construction'} issued."
+        else:
+            bp_desc = f"Building sanction recorded ({b.status})."
         events.append(
             TimelineEventOut(
                 event_id=f"EVT-BP-{b.id}",
                 timestamp=b.approval_date or "14 Nov 2023",
                 event_type="BUILDING_PERMISSION",
                 title=f"Building Permission {b.status} ({b.permission_id or 'Sanction'})",
-                description=f"Sanction for {b.floors or 'construction'} issued.",
+                description=bp_desc,
                 source=b.source or "Town Planning Authority",
                 status=b.status
             )
@@ -224,13 +230,17 @@ def get_parcel_timeline(
     # 5. Property tax
     taxes = db.query(PropertyTax).filter(PropertyTax.parcel_id == parcel.id).all()
     for t in taxes:
+        if can_access_tax_details(user_ctx):
+            tax_desc = f"Payment recorded: {t.amount_paid or 'Receipt issued'} with status {t.status}."
+        else:
+            tax_desc = f"Property tax assessment status: {t.status}."
         events.append(
             TimelineEventOut(
                 event_id=f"EVT-TAX-{t.id}",
                 timestamp=t.last_payment or "28 Jun 2024",
                 event_type="TAX_ASSESSMENT",
                 title=f"Property Tax Assessment ({t.assessment_id})",
-                description=f"Payment recorded: {t.amount_paid or 'Receipt issued'} with status {t.status}.",
+                description=tax_desc,
                 source=t.source or "Municipal Corporation",
                 status=t.status
             )

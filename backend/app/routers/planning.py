@@ -2,7 +2,7 @@
 PLOT360 Backend — Planning & Development Router
 Sections 27–32: Master plan, zoning, building sanctions, restrictions, and planning cross-check.
 """
-from typing import List
+from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Path
 from sqlalchemy.orm import Session
 
@@ -12,6 +12,8 @@ from app.schemas.planning import (
     PlanningOut, BuildingPermissionOut, RestrictionOut, PlanningCrossCheckOut
 )
 from app.services.parcel_service import get_parcel_by_ulpin_or_id
+from app.dependencies import get_current_user_optional, AuthenticatedUserContext
+from app.auth.field_filter import filter_building_permission_record
 
 router = APIRouter(prefix="/parcels", tags=["Planning"])
 
@@ -72,15 +74,17 @@ def get_zoning(
 
 
 
-@router.get("/{ulpin}/building", response_model=List[BuildingPermissionOut], summary="Sanctioned building permissions")
+@router.get("/{ulpin}/building", summary="Sanctioned building permissions")
 def get_building(
     ulpin: str = Path(..., description="Canonical ULPIN or parcel_id"),
+    user_ctx: Optional[AuthenticatedUserContext] = Depends(get_current_user_optional),
     db: Session = Depends(get_db)
 ):
     parcel = get_parcel_by_ulpin_or_id(ulpin, db)
     if not parcel:
         raise HTTPException(status_code=404, detail=f"Parcel not found: '{ulpin}'")
-    return db.query(BuildingPermission).filter(BuildingPermission.parcel_id == parcel.id).all()
+    bps = db.query(BuildingPermission).filter(BuildingPermission.parcel_id == parcel.id).all()
+    return [filter_building_permission_record(b, user_ctx) for b in bps]
 
 
 @router.get("/{ulpin}/restrictions", response_model=List[RestrictionOut], summary="Spatial restrictions and protected overlays")

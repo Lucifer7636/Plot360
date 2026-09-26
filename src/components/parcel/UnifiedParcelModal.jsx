@@ -435,21 +435,21 @@ export default function UnifiedParcelModal() {
               <div className="info-grid" style={{ gridTemplateColumns: '1fr 1fr 1fr' }}>
                 <div className="info-item">
                   <span className="info-key">Permission ID</span>
-                  <span className="info-val">{activeParcel.bp?.id || 'PJB/BP/2023/114'}</span>
+                  <span className="info-val">{activeParcel.bp?.id || activeParcel.building_permission?.permission_id || 'PJB/BP/2023/114'}</span>
                 </div>
                 <div className="info-item">
                   <span className="info-key">Sanction Status</span>
                   <span className="info-val" style={{ color: 'var(--status-success)', fontWeight: 600 }}>
-                    {activeParcel.bp?.status || 'Approved'}
+                    {activeParcel.bp?.status || activeParcel.building_permission?.status || 'Approved'}
                   </span>
                 </div>
                 <div className="info-item">
                   <span className="info-key">Sanctioned Height / Floors</span>
-                  <span className="info-val">{activeParcel.bp?.floors || 'G + 2'}</span>
+                  <span className="info-val">{activeParcel.bp?.floors || activeParcel.building_permission?.floors || 'Restricted / Officer Access Only'}</span>
                 </div>
                 <div className="info-item">
                   <span className="info-key">Approval Date</span>
-                  <span className="info-val">{activeParcel.bp?.date || '14 Nov 2023'}</span>
+                  <span className="info-val">{activeParcel.bp?.date || activeParcel.bp?.approval_date || activeParcel.building_permission?.approval_date || '14 Nov 2023'}</span>
                 </div>
                 <div className="info-item">
                   <span className="info-key">Sanctioned Built-Up Area</span>
@@ -469,29 +469,29 @@ export default function UnifiedParcelModal() {
               <div className="info-grid" style={{ gridTemplateColumns: '1fr 1fr 1fr' }}>
                 <div className="info-item">
                   <span className="info-key">Encumbrance Status</span>
-                  <span className="info-val" style={{ color: activeParcel.enc?.status === 'Active' ? 'var(--status-warning)' : 'var(--status-success)', fontWeight: 600 }}>
-                    {activeParcel.enc?.status || 'Clear'}
+                  <span className="info-val" style={{ color: (activeParcel.enc?.status === 'Active' || activeParcel.encumbrance?.status === 'Active') ? 'var(--status-warning)' : 'var(--status-success)', fontWeight: 600 }}>
+                    {activeParcel.enc?.status || activeParcel.encumbrance?.status || 'Clear'}
                   </span>
                 </div>
                 <div className="info-item">
                   <span className="info-key">Lending Financial Institution</span>
-                  <span className="info-val">{activeParcel.enc?.inst || 'None (No active lien)'}</span>
+                  <span className="info-val">{activeParcel.enc?.inst || activeParcel.encumbrance?.institution || ((activeParcel.enc?.status === 'Active' || activeParcel.encumbrance?.status === 'Active') ? 'Restricted / Officer Access Only' : 'None (No active lien)')}</span>
                 </div>
                 <div className="info-item">
                   <span className="info-key">Registered Charge Amount</span>
-                  <span className="info-val">{activeParcel.enc?.amt || 'N/A'}</span>
+                  <span className="info-val">{activeParcel.enc?.amt || activeParcel.encumbrance?.loan_amount || ((activeParcel.enc?.status === 'Active' || activeParcel.encumbrance?.status === 'Active') ? 'Restricted / Officer Access Only' : 'N/A')}</span>
                 </div>
                 <div className="info-item">
                   <span className="info-key">Mortgage Registry Ref</span>
-                  <span className="info-val">{activeParcel.enc?.ref || 'N/A'}</span>
+                  <span className="info-val">{activeParcel.enc?.ref || activeParcel.encumbrance?.reference || 'N/A'}</span>
                 </div>
                 <div className="info-item">
                   <span className="info-key">NOC Requirement for Transfer</span>
-                  <span className="info-val">{activeParcel.enc?.noc ? 'Mandatory Bank NOC Required' : 'Not Required'}</span>
+                  <span className="info-val">{(activeParcel.enc?.noc || activeParcel.encumbrance?.noc_required) ? 'Mandatory Bank NOC Required' : 'Not Required'}</span>
                 </div>
                 <div className="info-item">
                   <span className="info-key">CERSAI Registry Status</span>
-                  <span className="info-val">{activeParcel.enc?.status === 'Active' ? 'Charge Recorded' : 'Unencumbered'}</span>
+                  <span className="info-val">{(activeParcel.enc?.status === 'Active' || activeParcel.encumbrance?.status === 'Active') ? 'Charge Recorded' : 'Unencumbered'}</span>
                 </div>
               </div>
             </div>
@@ -503,21 +503,21 @@ export default function UnifiedParcelModal() {
               <div className="info-grid" style={{ gridTemplateColumns: '1fr 1fr 1fr' }}>
                 <div className="info-item">
                   <span className="info-key">Property Tax Assessment ID</span>
-                  <span className="info-val">{activeParcel.tax?.id || 'PT-CHD-2024-8902'}</span>
+                  <span className="info-val">{activeParcel.tax?.id || activeParcel.tax?.assessment_id || activeParcel.property_tax?.assessment_id || 'PT-CHD-2024-8902'}</span>
                 </div>
                 <div className="info-item">
                   <span className="info-key">Payment Status</span>
                   <span className="info-val" style={{ color: 'var(--status-success)', fontWeight: 600 }}>
-                    {activeParcel.tax?.status || 'Paid'}
+                    {activeParcel.tax?.status || activeParcel.property_tax?.status || 'Paid'}
                   </span>
                 </div>
                 <div className="info-item">
                   <span className="info-key">Last Assessed Tax Paid</span>
-                  <span className="info-val">{activeParcel.tax?.paid || '₹ 18,400'}</span>
+                  <span className="info-val">{activeParcel.tax?.paid || activeParcel.tax?.amount_paid || activeParcel.property_tax?.amount_paid || 'Restricted / Officer Access Only'}</span>
                 </div>
                 <div className="info-item">
                   <span className="info-key">Payment Date</span>
-                  <span className="info-val">{activeParcel.tax?.date || '28 Jun 2024'}</span>
+                  <span className="info-val">{activeParcel.tax?.date || activeParcel.tax?.last_payment || activeParcel.property_tax?.last_payment || '28 Jun 2024'}</span>
                 </div>
                 <div className="info-item">
                   <span className="info-key">Assessment Cycle</span>

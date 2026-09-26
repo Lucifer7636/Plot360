@@ -284,6 +284,10 @@ def build_unified_parcel_response(parcel: Parcel, db: Session, user_ctx: Optiona
         "property_tax": tax_dict,
         "utilities": ut_dict,
         "ai_alert": alert_dict,
+        "bp": bp_dict,
+        "enc": enc_dict,
+        "tax": tax_dict,
+        "ut": ut_dict,
         "polygon": coords
     }
 

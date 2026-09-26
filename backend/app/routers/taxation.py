@@ -2,13 +2,15 @@
 PLOT360 Backend — Taxation Router
 Section 33: Property tax assessments and status.
 """
-from typing import List
+from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Path
 from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.models.taxation import PropertyTax
 from app.services.parcel_service import get_parcel_by_ulpin_or_id
+from app.dependencies import get_current_user_optional, AuthenticatedUserContext
+from app.auth.field_filter import filter_property_tax_record
 
 router = APIRouter(prefix="/parcels", tags=["Taxation"])
 
@@ -16,6 +18,7 @@ router = APIRouter(prefix="/parcels", tags=["Taxation"])
 @router.get("/{ulpin}/tax", summary="Property tax assessment and payment records")
 def get_tax(
     ulpin: str = Path(..., description="Canonical ULPIN or parcel_id"),
+    user_ctx: Optional[AuthenticatedUserContext] = Depends(get_current_user_optional),
     db: Session = Depends(get_db)
 ):
     parcel = get_parcel_by_ulpin_or_id(ulpin, db)
@@ -23,21 +26,7 @@ def get_tax(
         raise HTTPException(status_code=404, detail=f"Parcel not found: '{ulpin}'")
 
     taxes = db.query(PropertyTax).filter(PropertyTax.parcel_id == parcel.id).all()
-    return [
-        {
-            "id": t.id,
-            "ulpin": t.ulpin,
-            "assessment_id": t.assessment_id,
-            "status": t.status,
-            "amount_paid": t.amount_paid,
-            "annual_demand": t.annual_demand,
-            "last_payment": t.last_payment,
-            "due_date": t.due_date,
-            "receipt_no": t.receipt_no,
-            "source": t.source
-        }
-        for t in taxes
-    ]
+    return [filter_property_tax_record(t, user_ctx) for t in taxes]
 
 
 @router.get("/{ulpin}/valuation", summary="Valuation references and indicative analytical estimates")

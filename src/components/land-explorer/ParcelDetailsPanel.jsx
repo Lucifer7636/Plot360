@@ -129,17 +129,17 @@ export default function ParcelDetailsPanel() {
   const ownerShare = activeParcel.owner?.share || '100%';
   const bpId = activeParcel.bp?.id || activeParcel.building_permission?.id || 'PJB/BP/2023/114';
   const bpStatus = activeParcel.bp?.status || activeParcel.building_permission?.status || 'Approved';
-  const bpFloors = activeParcel.bp?.floors || activeParcel.building_permission?.floors || 'G + 2 Floors';
+  const bpFloors = activeParcel.bp?.floors || activeParcel.building_permission?.floors || 'Restricted / Officer Access Only';
   const bpDate = activeParcel.bp?.date || activeParcel.building_permission?.date || '14 Nov 2023';
 
   const encStatus = activeParcel.enc?.status || activeParcel.encumbrance?.status || 'Clear';
-  const encInst = activeParcel.enc?.inst || activeParcel.encumbrance?.institution || (encStatus === 'Active' ? 'HDFC Bank Ltd.' : 'Nil (No Charge)');
-  const encAmt = activeParcel.enc?.amt || activeParcel.encumbrance?.amount || (encStatus === 'Active' ? '₹ 45,00,000' : '₹ 0.00');
-  const encRef = activeParcel.enc?.ref || activeParcel.encumbrance?.reference || 'MORT-2023-098';
+  const encInst = activeParcel.enc?.inst || activeParcel.encumbrance?.institution || (encStatus === 'Active' ? 'Restricted / Officer Access Only' : 'Nil (No Charge)');
+  const encAmt = activeParcel.enc?.amt || activeParcel.encumbrance?.amount || (encStatus === 'Active' ? 'Restricted / Officer Access Only' : '₹ 0.00');
+  const encRef = activeParcel.enc?.ref || activeParcel.encumbrance?.reference || (encStatus === 'Active' ? 'Restricted / Officer Access Only' : 'N/A');
 
   const taxId = activeParcel.tax?.id || activeParcel.property_tax?.id || 'PT-CHD-2024-8902';
   const taxStatus = activeParcel.tax?.status || activeParcel.property_tax?.status || 'Paid';
-  const taxPaid = activeParcel.tax?.paid || activeParcel.property_tax?.paid || '₹ 18,400';
+  const taxPaid = activeParcel.tax?.paid || activeParcel.property_tax?.paid || activeParcel.property_tax?.amount_paid || 'Restricted / Officer Access Only';
   const taxDate = activeParcel.tax?.date || activeParcel.property_tax?.date || '28 Jun 2024';
 
   const utElec = activeParcel.ut?.elec || activeParcel.utilities?.electricity || 'Connected (Meter #99210)';
