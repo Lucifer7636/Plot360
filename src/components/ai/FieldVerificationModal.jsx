@@ -23,6 +23,18 @@ export default function FieldVerificationModal() {
   const [notes, setNotes] = useState(fieldVerificationNotes);
   const [successMsg, setSuccessMsg] = useState(false);
 
+  // Accessible Escape key listener
+  React.useEffect(() => {
+    if (!fieldModalOpen) return;
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        setFieldModalOpen(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [fieldModalOpen, setFieldModalOpen]);
+
   if (!fieldModalOpen) return null;
 
   const handleSubmit = (e) => {
@@ -37,6 +49,9 @@ export default function FieldVerificationModal() {
 
   return (
     <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="field-verification-title"
       style={{
         position: 'fixed',
         inset: 0,
@@ -89,15 +104,15 @@ export default function FieldVerificationModal() {
               <UserCheck size={18} />
             </div>
             <div>
-              <h3 style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text-primary)' }}>
+              <h3 id="field-verification-title" style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text-primary)' }}>
                 Field Verification Workflow
               </h3>
               <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-                Parcel {activeParcel.parcel_id} • ULPIN: {activeParcel.ulpin}
+                Parcel {activeParcel?.parcel_id} • ULPIN: <span className="font-mono">{activeParcel?.ulpin}</span>
               </div>
             </div>
           </div>
-          <button className="icon-btn" onClick={() => setFieldModalOpen(false)}>
+          <button className="icon-btn" onClick={() => setFieldModalOpen(false)} aria-label="Close modal">
             <X size={16} />
           </button>
         </div>
@@ -112,9 +127,22 @@ export default function FieldVerificationModal() {
             <label style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-primary)', textTransform: 'uppercase' }}>
               Verification Status Determination
             </label>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginTop: '6px' }}>
+            <div
+              role="radiogroup"
+              aria-label="Verification Status Determination"
+              style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginTop: '6px' }}
+            >
               <div
+                role="radio"
+                tabIndex={0}
+                aria-checked={status === 'VERIFIED'}
                 onClick={() => setStatus('VERIFIED')}
+                onKeyDown={(e) => {
+                  if (e.key === ' ' || e.key === 'Enter') {
+                    e.preventDefault();
+                    setStatus('VERIFIED');
+                  }
+                }}
                 style={{
                   padding: '10px',
                   borderRadius: '8px',
@@ -134,7 +162,16 @@ export default function FieldVerificationModal() {
               </div>
 
               <div
+                role="radio"
+                tabIndex={0}
+                aria-checked={status === 'UNDER_REVIEW'}
                 onClick={() => setStatus('UNDER_REVIEW')}
+                onKeyDown={(e) => {
+                  if (e.key === ' ' || e.key === 'Enter') {
+                    e.preventDefault();
+                    setStatus('UNDER_REVIEW');
+                  }
+                }}
                 style={{
                   padding: '10px',
                   borderRadius: '8px',
@@ -154,7 +191,16 @@ export default function FieldVerificationModal() {
               </div>
 
               <div
+                role="radio"
+                tabIndex={0}
+                aria-checked={status === 'REQUIRES_MORE_EVIDENCE'}
                 onClick={() => setStatus('REQUIRES_MORE_EVIDENCE')}
+                onKeyDown={(e) => {
+                  if (e.key === ' ' || e.key === 'Enter') {
+                    e.preventDefault();
+                    setStatus('REQUIRES_MORE_EVIDENCE');
+                  }
+                }}
                 style={{
                   padding: '10px',
                   borderRadius: '8px',
@@ -174,7 +220,16 @@ export default function FieldVerificationModal() {
               </div>
 
               <div
+                role="radio"
+                tabIndex={0}
+                aria-checked={status === 'PENDING'}
                 onClick={() => setStatus('PENDING')}
+                onKeyDown={(e) => {
+                  if (e.key === ' ' || e.key === 'Enter') {
+                    e.preventDefault();
+                    setStatus('PENDING');
+                  }
+                }}
                 style={{
                   padding: '10px',
                   borderRadius: '8px',
@@ -196,10 +251,11 @@ export default function FieldVerificationModal() {
           </div>
 
           <div>
-            <label style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-primary)', textTransform: 'uppercase' }}>
+            <label htmlFor="officer-inspection-notes" style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-primary)', textTransform: 'uppercase' }}>
               Officer Inspection Notes & Findings
             </label>
             <textarea
+              id="officer-inspection-notes"
               rows={4}
               value={notes}
               onChange={(e) => setNotes(e.target.value)}

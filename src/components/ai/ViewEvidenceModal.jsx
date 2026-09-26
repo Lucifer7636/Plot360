@@ -23,12 +23,27 @@ export default function ViewEvidenceModal() {
   const [sliderPos, setSliderPos] = useState(50); // 0% to 100% split
   const [showCadastral, setShowCadastral] = useState(true);
 
+  // Accessible Escape key listener
+  React.useEffect(() => {
+    if (!evidenceModalOpen) return;
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        setEvidenceModalOpen(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [evidenceModalOpen, setEvidenceModalOpen]);
+
   if (!evidenceModalOpen) return null;
 
   const isSentinelAvailable = activeParcel?.parcel_id === 'P-1027' || Boolean(activeParcel?.sentinel_available);
 
   return (
     <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="evidence-modal-title"
       style={{
         position: 'fixed',
         inset: 0,
@@ -84,7 +99,7 @@ export default function ViewEvidenceModal() {
             </div>
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <h2 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text-primary)' }}>
+                <h2 id="evidence-modal-title" style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text-primary)' }}>
                   Temporal Change Evidence: {activeParcel.parcel_id}
                 </h2>
                 <span
@@ -102,7 +117,7 @@ export default function ViewEvidenceModal() {
                 </span>
               </div>
               <div style={{ fontSize: '11.5px', color: 'var(--text-muted)' }}>
-                ULPIN: <strong style={{ color: 'var(--brand-accent-cyan)' }}>{activeParcel.ulpin}</strong> • {activeParcel.location}
+                ULPIN: <strong className="font-mono" style={{ color: 'var(--brand-accent-cyan)' }}>{activeParcel.ulpin}</strong> • {activeParcel.location}
               </div>
             </div>
           </div>
@@ -118,14 +133,14 @@ export default function ViewEvidenceModal() {
                 <span>{showCadastral ? 'Hide Boundary' : 'Show Boundary'}</span>
               </button>
             )}
-            <button className="icon-btn" onClick={() => setEvidenceModalOpen(false)}>
+            <button className="icon-btn" onClick={() => setEvidenceModalOpen(false)} aria-label="Close modal">
               <X size={18} />
             </button>
           </div>
         </div>
 
         {/* Content Body */}
-        <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '1.4fr 1fr', overflow: 'hidden' }}>
+        <div className="grid-split-responsive" style={{ flex: 1, overflow: 'hidden' }}>
           {/* LEFT PANEL */}
           {isSentinelAvailable ? (
             <div
@@ -277,6 +292,8 @@ export default function ViewEvidenceModal() {
                 type="range"
                 min="5"
                 max="95"
+                aria-label="Temporal satellite comparison slider"
+                aria-valuenow={sliderPos}
                 value={sliderPos}
                 onChange={(e) => setSliderPos(Number(e.target.value))}
                 style={{

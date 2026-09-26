@@ -460,3 +460,51 @@ html, body {
   box-shadow: none !important;
   backdrop-filter: none !important;
 }
+
+/* ==========================================================================
+   REDUCED MOTION SUPPORT (WCAG 2.1 Criterion 2.3.3)
+   ========================================================================== */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ==========================================================================
+   RESPONSIVE UTILITY GRIDS FOR MODALS & WORKSPACES
+   ========================================================================== */
+.grid-quad-responsive {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+
+@media (max-width: 900px) {
+  .grid-quad-responsive {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+}
+
+@media (max-width: 480px) {
+  .grid-quad-responsive {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+}
+
+.grid-split-responsive {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: 14px;
+}
+
+@media (max-width: 860px) {
+  .grid-split-responsive {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+}

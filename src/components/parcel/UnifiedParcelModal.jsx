@@ -29,6 +29,18 @@ export default function UnifiedParcelModal() {
 
   const [activeTab, setActiveTab] = useState('overview');
 
+  // Accessible Escape key listener
+  React.useEffect(() => {
+    if (!unifiedReportOpen) return;
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        setUnifiedReportOpen(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [unifiedReportOpen, setUnifiedReportOpen]);
+
   if (!unifiedReportOpen || !activeParcel) return null;
 
   const tabs = [
@@ -48,6 +60,9 @@ export default function UnifiedParcelModal() {
 
   return (
     <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="unified-parcel-title"
       style={{
         position: 'fixed',
         inset: 0,
@@ -103,7 +118,7 @@ export default function UnifiedParcelModal() {
             </div>
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <h2 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--text-primary)' }}>
+                <h2 id="unified-parcel-title" style={{ fontSize: '18px', fontWeight: 700, color: 'var(--text-primary)' }}>
                   Unified Parcel View: {activeParcel.parcel_id}
                 </h2>
                 <span className="status-pill-verified">✓ Active Government Record</span>
@@ -193,7 +208,7 @@ export default function UnifiedParcelModal() {
                 </div>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px' }}>
+              <div className="grid-quad-responsive">
                 <div className="quick-status-card">
                   <span className="info-key">Standardized Area</span>
                   <span style={{ fontSize: '16px', fontWeight: 700, color: 'var(--brand-accent-blue)' }}>

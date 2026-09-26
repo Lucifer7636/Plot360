@@ -136,6 +136,8 @@ export default function CitizenServicesModule() {
           <div style={{ flex: 1, position: 'relative' }}>
             <Search size={16} style={{ position: 'absolute', left: '12px', top: '12px', color: 'var(--text-muted)' }} />
             <input
+              id="citizen-land-search"
+              aria-label="Search Land by ULPIN or Parcel ID"
               type="text"
               className="search-input"
               style={{ height: '40px', paddingLeft: '38px', fontSize: '13px' }}
@@ -169,8 +171,9 @@ export default function CitizenServicesModule() {
 
           <form onSubmit={handleSubmitRequest} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
             <div>
-              <label style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)' }}>SERVICE TYPE</label>
+              <label htmlFor="citizen-service-type" style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)' }}>SERVICE TYPE</label>
               <select
+                id="citizen-service-type"
                 value={selectedService}
                 onChange={(e) => setSelectedService(e.target.value)}
                 style={{ width: '100%', marginTop: '4px', padding: '8px', background: 'var(--bg-input)', border: '1px solid var(--border-card)', borderRadius: '6px', color: 'var(--text-primary)', fontSize: '12px' }}
@@ -184,8 +187,9 @@ export default function CitizenServicesModule() {
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
               <div>
-                <label style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)' }}>APPLICANT NAME</label>
+                <label htmlFor="citizen-applicant-name" style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)' }}>APPLICANT NAME</label>
                 <input
+                  id="citizen-applicant-name"
                   type="text"
                   value={applicantName}
                   onChange={(e) => setApplicantName(e.target.value)}
@@ -193,8 +197,9 @@ export default function CitizenServicesModule() {
                 />
               </div>
               <div>
-                <label style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)' }}>MOBILE NUMBER</label>
+                <label htmlFor="citizen-applicant-phone" style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)' }}>MOBILE NUMBER</label>
                 <input
+                  id="citizen-applicant-phone"
                   type="text"
                   value={applicantPhone}
                   onChange={(e) => setApplicantPhone(e.target.value)}
@@ -204,8 +209,9 @@ export default function CitizenServicesModule() {
             </div>
 
             <div>
-              <label style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)' }}>DETAILS & REMARKS</label>
+              <label htmlFor="citizen-request-notes" style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)' }}>DETAILS & REMARKS</label>
               <textarea
+                id="citizen-request-notes"
                 rows={3}
                 value={requestNotes}
                 onChange={(e) => setRequestNotes(e.target.value)}
