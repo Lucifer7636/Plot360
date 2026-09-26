@@ -1,5 +1,7 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { Loader } from '@googlemaps/js-api-loader';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 import {
   Layers,
   Maximize2,
@@ -8,8 +10,7 @@ import {
   Minus,
   LocateFixed,
   Navigation,
-  X,
-  MapPin
+  X
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 
@@ -42,23 +43,27 @@ export default function GoogleMapView() {
   } = useApp();
 
   const mapRef = useRef(null);
-  const googleMapRef = useRef(null);  // persistent ref so effects can always access latest map
-  const polygonRefs = useRef([]);     // [{id, poly}]
+  const googleMapRef = useRef(null);
+  const leafletMapRef = useRef(null);
+  const leafletTileLayerRef = useRef(null);
+  const leafletLabelLayerRef = useRef(null);
+  const polygonRefs = useRef([]);        // Google Maps polygons [{id, poly}]
+  const leafletPolygonsRef = useRef([]); // Leaflet polygons [{id, poly}]
   const loaderRef = useRef(null);
 
   const [mapLoaded, setMapLoaded] = useState(false);
-  const [apiError, setApiError] = useState(false);
+  const [useLeaflet, setUseLeaflet] = useState(false);
 
   const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '';
 
-  // ─── 1. Initialize Google Maps once ──────────────────────────────────────
+  // ─── 1. Decide Engine: Google Maps if apiKey provided, Leaflet otherwise ────
   useEffect(() => {
     if (!apiKey || apiKey.trim() === '') {
-      setApiError(true);
+      setUseLeaflet(true);
       return;
     }
 
-    if (loaderRef.current) return; // already initializing
+    if (loaderRef.current) return;
 
     const loader = new Loader({
       apiKey: apiKey,
@@ -68,78 +73,226 @@ export default function GoogleMapView() {
 
     loaderRef.current = loader;
 
-    loader
-      .load()
+    loader.load()
       .then((google) => {
         if (!mapRef.current) return;
-
-        // Wait a tick so container has painted real dimensions
-        requestAnimationFrame(() => {
-          const loc = currentLocation || { lat: 30.7398, lng: 76.7820, zoom: 17 };
-
-          const map = new google.maps.Map(mapRef.current, {
-            center: { lat: loc.lat, lng: loc.lng },
-            zoom: loc.zoom || 17,
-            mapTypeId: toGoogleMapType(mapType, google),
-            disableDefaultUI: true,
-            zoomControl: false,
-            streetViewControl: false,
-            fullscreenControl: false,
-            gestureHandling: 'greedy'
-          });
-
-          googleMapRef.current = map;
-          setMapLoaded(true);
+        const loc = currentLocation || { lat: 18.5204, lng: 73.8567, zoom: 17 };
+        const map = new google.maps.Map(mapRef.current, {
+          center: { lat: loc.lat, lng: loc.lng },
+          zoom: loc.zoom || 17,
+          mapTypeId: toGoogleMapType(mapType, google),
+          disableDefaultUI: true,
+          zoomControl: false,
+          streetViewControl: false,
+          fullscreenControl: false,
+          gestureHandling: 'greedy'
         });
+
+        googleMapRef.current = map;
+        setMapLoaded(true);
       })
       .catch((err) => {
-        console.warn('Google Maps failed to load:', err);
-        setApiError(true);
+        console.warn('Google Maps failed to load, seamlessly falling back to high-resolution GIS engine:', err);
+        setUseLeaflet(true);
       });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [apiKey]);
 
-  // ─── 2. Draw / Redraw Cadastral Vector Overlay when map or parcels change ─
+  // ─── 2. Initialize Leaflet Map (High-Res GIS Engine) ────────────────────────
+  useEffect(() => {
+    if (!useLeaflet || !mapRef.current || leafletMapRef.current) return;
+
+    const loc = currentLocation || { lat: 18.5204, lng: 73.8567, zoom: 17 };
+    const map = L.map(mapRef.current, {
+      center: [loc.lat, loc.lng],
+      zoom: loc.zoom || 17,
+      zoomControl: false,
+      attributionControl: false
+    });
+
+    const getTileUrl = (type) => {
+      if (type === 'map') {
+        return 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
+      }
+      return 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
+    };
+
+    const tileLayer = L.tileLayer(getTileUrl(mapType), {
+      maxZoom: 20,
+      subdomains: 'abcd'
+    }).addTo(map);
+
+    leafletTileLayerRef.current = tileLayer;
+
+    if (mapType === 'hybrid') {
+      leafletLabelLayerRef.current = L.tileLayer(
+        'https://{s}.basemaps.cartocdn.com/rastertiles/voyager_only_labels/{z}/{x}/{y}{r}.png',
+        { maxZoom: 20, subdomains: 'abcd' }
+      ).addTo(map);
+    }
+
+    leafletMapRef.current = map;
+    setMapLoaded(true);
+
+    setTimeout(() => {
+      map.invalidateSize();
+    }, 150);
+
+    return () => {
+      if (leafletMapRef.current) {
+        leafletMapRef.current.remove();
+        leafletMapRef.current = null;
+      }
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [useLeaflet]);
+
+  // ─── 3. Leaflet: Basemap Type Changes ─────────────────────────────────────
+  useEffect(() => {
+    if (!leafletMapRef.current) return;
+
+    if (leafletTileLayerRef.current) {
+      leafletMapRef.current.removeLayer(leafletTileLayerRef.current);
+    }
+    if (leafletLabelLayerRef.current) {
+      leafletMapRef.current.removeLayer(leafletLabelLayerRef.current);
+      leafletLabelLayerRef.current = null;
+    }
+
+    const tileUrl = mapType === 'map'
+      ? 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png'
+      : 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
+
+    leafletTileLayerRef.current = L.tileLayer(tileUrl, {
+      maxZoom: 20,
+      subdomains: 'abcd'
+    }).addTo(leafletMapRef.current);
+
+    if (mapType === 'hybrid') {
+      leafletLabelLayerRef.current = L.tileLayer(
+        'https://{s}.basemaps.cartocdn.com/rastertiles/voyager_only_labels/{z}/{x}/{y}{r}.png',
+        { maxZoom: 20, subdomains: 'abcd' }
+      ).addTo(leafletMapRef.current);
+    }
+  }, [mapType]);
+
+  // ─── 4. Leaflet: Location Changes ─────────────────────────────────────────
+  useEffect(() => {
+    if (!leafletMapRef.current || !currentLocation) return;
+    leafletMapRef.current.setView(
+      [currentLocation.lat, currentLocation.lng],
+      currentLocation.zoom || 17,
+      { animate: true }
+    );
+  }, [currentLocation?.id]);
+
+  // ─── 5. Leaflet: Draw Cadastral Vector Overlay ─────────────────────────────
+  useEffect(() => {
+    if (!leafletMapRef.current) return;
+
+    // Remove existing polygons
+    leafletPolygonsRef.current.forEach(({ poly }) => {
+      if (leafletMapRef.current) leafletMapRef.current.removeLayer(poly);
+    });
+    leafletPolygonsRef.current = [];
+
+    if (!layers.parcels) return;
+
+    const map = leafletMapRef.current;
+    const created = locationParcels
+      .filter((p) => p.polygon && p.polygon.length > 2)
+      .map((parcel) => {
+        const coords = parcel.polygon.map((pt) => [pt.lat, pt.lng]);
+        const isSelected = activeParcel && parcel.parcel_id === activeParcel.parcel_id;
+
+        const poly = L.polygon(coords, {
+          color: isSelected ? '#38bdf8' : 'rgba(255,255,255,0.7)',
+          weight: isSelected ? 3.5 : 1.2,
+          fillColor: isSelected ? '#0284c7' : '#0f172a',
+          fillOpacity: isSelected ? 0.45 : 0.22
+        });
+
+        poly.on('click', () => {
+          selectParcel(parcel.parcel_id);
+        });
+
+        if (layers.labels) {
+          poly.bindTooltip(parcel.parcel_id, {
+            permanent: isSelected,
+            direction: 'center',
+            className: 'parcel-map-tooltip'
+          });
+        }
+
+        poly.addTo(map);
+        return { id: parcel.parcel_id, poly };
+      });
+
+    leafletPolygonsRef.current = created;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mapLoaded, useLeaflet, locationParcels, layers.parcels, layers.labels]);
+
+  // ─── 6. Leaflet: Update Polygon Selection State ───────────────────────────
+  useEffect(() => {
+    if (!leafletMapRef.current) return;
+
+    leafletPolygonsRef.current.forEach(({ id, poly }) => {
+      const isSelected = activeParcel && id === activeParcel.parcel_id;
+      poly.setStyle({
+        color: isSelected ? '#38bdf8' : 'rgba(255,255,255,0.7)',
+        weight: isSelected ? 3.5 : 1.2,
+        fillColor: isSelected ? '#0284c7' : '#0f172a',
+        fillOpacity: isSelected ? 0.45 : 0.22
+      });
+
+      if (poly.getTooltip()) {
+        if (isSelected) {
+          poly.openTooltip();
+        } else {
+          poly.closeTooltip();
+        }
+      }
+    });
+  }, [activeParcel]);
+
+  // ─── 7. Google Maps: Draw / Redraw Cadastral Vector Overlay ────────────────
   useEffect(() => {
     if (!mapLoaded || !googleMapRef.current || !window.google) return;
 
     const google = window.google;
     const map = googleMapRef.current;
 
-    // Remove old polygons
     polygonRefs.current.forEach(({ poly }) => poly.setMap(null));
     polygonRefs.current = [];
 
     if (!layers.parcels) return;
 
     const created = locationParcels
-      .filter(p => p.polygon && p.polygon.length > 2)
+      .filter((p) => p.polygon && p.polygon.length > 2)
       .map((parcel) => {
         const isSelected = activeParcel && parcel.parcel_id === activeParcel.parcel_id;
 
         const poly = new google.maps.Polygon({
           paths: parcel.polygon,
-          strokeColor:   isSelected ? '#38bdf8' : 'rgba(255,255,255,0.6)',
+          strokeColor: isSelected ? '#38bdf8' : 'rgba(255,255,255,0.6)',
           strokeOpacity: 0.9,
-          strokeWeight:  isSelected ? 3.5 : 1.2,
-          fillColor:     isSelected ? '#0284c7' : '#0f172a',
-          fillOpacity:   isSelected ? 0.38 : 0.22,
+          strokeWeight: isSelected ? 3.5 : 1.2,
+          fillColor: isSelected ? '#0284c7' : '#0f172a',
+          fillOpacity: isSelected ? 0.38 : 0.22,
           map,
-          zIndex:        isSelected ? 10 : 1,
-          clickable:     true
+          zIndex: isSelected ? 10 : 1,
+          clickable: true
         });
 
         poly.addListener('click', () => {
           selectParcel(parcel.parcel_id);
         });
 
-        // Compact parcel ID label using a transparent Marker with text label
         if (layers.labels) {
           const bounds = new google.maps.LatLngBounds();
-          parcel.polygon.forEach(pt => bounds.extend(pt));
+          parcel.polygon.forEach((pt) => bounds.extend(pt));
           const center = bounds.getCenter();
 
-          // Use a Marker with label — cleaner than InfoWindow (no close button)
           const labelMarker = new google.maps.Marker({
             position: center,
             map: isSelected ? map : null,
@@ -171,21 +324,20 @@ export default function GoogleMapView() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mapLoaded, locationParcels, layers.parcels, layers.labels]);
 
-  // ─── 3. Update polygon selection styling when activeParcel changes ─────────
+  // ─── 8. Google Maps: Selection Styling Updates ────────────────────────────
   useEffect(() => {
-    if (!mapLoaded || !window.google) return;
+    if (!mapLoaded || !window.google || !googleMapRef.current) return;
 
     polygonRefs.current.forEach(({ id, poly }) => {
       const isSelected = activeParcel && id === activeParcel.parcel_id;
       poly.setOptions({
-        strokeColor:   isSelected ? '#38bdf8' : 'rgba(255,255,255,0.6)',
-        strokeWeight:  isSelected ? 3.5 : 1.2,
-        fillColor:     isSelected ? '#0284c7' : '#0f172a',
-        fillOpacity:   isSelected ? 0.38 : 0.22,
-        zIndex:        isSelected ? 10 : 1
+        strokeColor: isSelected ? '#38bdf8' : 'rgba(255,255,255,0.6)',
+        strokeWeight: isSelected ? 3.5 : 1.2,
+        fillColor: isSelected ? '#0284c7' : '#0f172a',
+        fillOpacity: isSelected ? 0.38 : 0.22,
+        zIndex: isSelected ? 10 : 1
       });
 
-      // Update labels — Marker uses setMap, not open/close
       if (poly._label) {
         if (isSelected) {
           poly._label.setMap(googleMapRef.current);
@@ -199,50 +351,63 @@ export default function GoogleMapView() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeParcel, mapLoaded]);
 
-  // ─── 4. Move map when location changes ───────────────────────────────────
+  // ─── 9. Google Maps: Location & MapType Updates ───────────────────────────
   useEffect(() => {
     if (!mapLoaded || !googleMapRef.current || !currentLocation) return;
-
     googleMapRef.current.panTo({ lat: currentLocation.lat, lng: currentLocation.lng });
     googleMapRef.current.setZoom(currentLocation.zoom || 17);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentLocation?.id, mapLoaded]);
 
-  // ─── 5. Update map type when mapType state changes ─────────────────────────
   useEffect(() => {
     if (!mapLoaded || !googleMapRef.current || !window.google) return;
     googleMapRef.current.setMapTypeId(toGoogleMapType(mapType, window.google));
   }, [mapType, mapLoaded]);
 
-  // ─── 6. Trigger resize when fullscreen toggles ───────────────────────────
+  // ─── 10. Fullscreen Resize Trigger ────────────────────────────────────────
   useEffect(() => {
-    if (!mapLoaded || !googleMapRef.current || !window.google) return;
     setTimeout(() => {
-      window.google.maps.event.trigger(googleMapRef.current, 'resize');
-      if (currentLocation) {
-        googleMapRef.current.setCenter({ lat: currentLocation.lat, lng: currentLocation.lng });
+      if (googleMapRef.current && window.google) {
+        window.google.maps.event.trigger(googleMapRef.current, 'resize');
+        if (currentLocation) {
+          googleMapRef.current.setCenter({ lat: currentLocation.lat, lng: currentLocation.lng });
+        }
       }
-    }, 100);
+      if (leafletMapRef.current) {
+        leafletMapRef.current.invalidateSize();
+        if (currentLocation) {
+          leafletMapRef.current.setView([currentLocation.lat, currentLocation.lng]);
+        }
+      }
+    }, 150);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isFullscreen, mapLoaded]);
+  }, [isFullscreen]);
 
-  // ─── Handlers ────────────────────────────────────────────────────────────
+  // ─── Controls & Handlers ──────────────────────────────────────────────────
   const handleZoomIn = useCallback(() => {
     if (googleMapRef.current) {
       googleMapRef.current.setZoom(googleMapRef.current.getZoom() + 1);
+    } else if (leafletMapRef.current) {
+      leafletMapRef.current.zoomIn();
     }
   }, []);
 
   const handleZoomOut = useCallback(() => {
     if (googleMapRef.current) {
       googleMapRef.current.setZoom(Math.max(googleMapRef.current.getZoom() - 1, 3));
+    } else if (leafletMapRef.current) {
+      leafletMapRef.current.zoomOut();
     }
   }, []);
 
   const handleReset = useCallback(() => {
-    if (!googleMapRef.current || !currentLocation) return;
-    googleMapRef.current.panTo({ lat: currentLocation.lat, lng: currentLocation.lng });
-    googleMapRef.current.setZoom(currentLocation.zoom || 17);
+    if (!currentLocation) return;
+    if (googleMapRef.current) {
+      googleMapRef.current.panTo({ lat: currentLocation.lat, lng: currentLocation.lng });
+      googleMapRef.current.setZoom(currentLocation.zoom || 17);
+    } else if (leafletMapRef.current) {
+      leafletMapRef.current.setView([currentLocation.lat, currentLocation.lng], currentLocation.zoom || 17);
+    }
     if (currentLocation.defaultParcelId) {
       selectParcel(currentLocation.defaultParcelId);
     }
@@ -255,12 +420,14 @@ export default function GoogleMapView() {
     }
     navigator.geolocation.getCurrentPosition(
       (pos) => {
+        const { latitude: lat, longitude: lng } = pos.coords;
         if (googleMapRef.current) {
-          const { latitude: lat, longitude: lng } = pos.coords;
           googleMapRef.current.panTo({ lat, lng });
           googleMapRef.current.setZoom(16);
-          showLocationToast('Map centered on your location.', 'info');
+        } else if (leafletMapRef.current) {
+          leafletMapRef.current.setView([lat, lng], 16);
         }
+        showLocationToast('Map centered on your location.', 'info');
       },
       (err) => {
         let msg = 'Could not get your location.';
@@ -279,8 +446,7 @@ export default function GoogleMapView() {
       style={isFullscreen ? { position: 'fixed', inset: 0, zIndex: 9999, borderRadius: 0 } : {}}
     >
       <div className="map-canvas-container">
-
-        {/* ── Google Maps container (always rendered so ref attaches) ── */}
+        {/* Map Canvas (Google Maps or High-Resolution Leaflet Engine) */}
         <div
           ref={mapRef}
           style={{
@@ -288,54 +454,41 @@ export default function GoogleMapView() {
             inset: 0,
             width: '100%',
             height: '100%',
-            display: (!apiKey || apiError) ? 'none' : 'block'
+            display: 'block'
           }}
         />
 
-        {/* ── Error / No-Key state ── */}
-        {(!apiKey || apiError) && (
-          <div style={{
-            position: 'absolute', inset: 0,
-            display: 'flex', flexDirection: 'column',
-            alignItems: 'center', justifyContent: 'center',
-            background: 'var(--bg-main)', gap: '12px'
-          }}>
-            <MapPin size={32} color="var(--brand-accent-blue)" />
-            <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-primary)' }}>
-              {!apiKey ? 'Google Maps API key not configured.' : 'Google Maps could not be loaded.'}
-            </div>
-            <div style={{ fontSize: '11px', color: 'var(--text-muted)', maxWidth: '280px', textAlign: 'center' }}>
-              {!apiKey
-                ? 'Set VITE_GOOGLE_MAPS_API_KEY in your .env file and restart the dev server.'
-                : 'Check your API key, browser console, and network connection.'}
-            </div>
-          </div>
-        )}
-
-        {/* ── SVG Cadastral overlay (shown over Google Maps when map not loaded yet / loading) ── */}
-        {/* This is intentionally empty – cadastral is drawn as Google Maps Polygons above ──── */}
-
-        {/* ── Location Toast ── */}
+        {/* Location Toast */}
         {locationToast && (
-          <div style={{
-            position: 'absolute', bottom: '48px', left: '50%', transform: 'translateX(-50%)',
-            background: locationToast.type === 'error' ? 'rgba(239,68,68,0.9)' : 'rgba(2,132,199,0.9)',
-            color: '#fff', fontSize: '11.5px', fontWeight: 600,
-            padding: '6px 14px', borderRadius: '20px',
-            boxShadow: '0 2px 12px rgba(0,0,0,0.3)',
-            zIndex: 500, whiteSpace: 'nowrap', pointerEvents: 'none'
-          }}>
+          <div
+            style={{
+              position: 'absolute',
+              bottom: '48px',
+              left: '50%',
+              transform: 'translateX(-50%)',
+              background: locationToast.type === 'error' ? 'rgba(239,68,68,0.9)' : 'rgba(2,132,199,0.9)',
+              color: '#fff',
+              fontSize: '11.5px',
+              fontWeight: 600,
+              padding: '6px 14px',
+              borderRadius: '20px',
+              boxShadow: '0 2px 12px rgba(0,0,0,0.3)',
+              zIndex: 500,
+              whiteSpace: 'nowrap',
+              pointerEvents: 'none'
+            }}
+          >
             {locationToast.message}
           </div>
         )}
 
-        {/* ── Floating Top Left Pill ── */}
+        {/* Floating Top Left Pill */}
         <div className="map-pill-top-left">
           <span>Cadastral Parcels</span>
           <X size={12} style={{ cursor: 'pointer' }} onClick={() => toggleLayer('parcels')} />
         </div>
 
-        {/* ── Basemap Switcher Pills ── */}
+        {/* Basemap Switcher Pills */}
         <div className="map-basemap-toggle">
           <button
             className={`basemap-btn ${mapType === 'map' ? 'active' : ''}`}
@@ -357,7 +510,7 @@ export default function GoogleMapView() {
           </button>
         </div>
 
-        {/* ── Right Floating Toolbar ── */}
+        {/* Right Floating Toolbar */}
         <div className="map-toolbar">
           <button
             className="map-tool-btn"
@@ -395,7 +548,7 @@ export default function GoogleMapView() {
           </button>
         </div>
 
-        {/* ── Layers Drawer ── */}
+        {/* Layers Drawer */}
         {layersDrawerOpen && (
           <div className="map-layers-drawer">
             <div className="layer-drawer-header">
@@ -488,15 +641,21 @@ export default function GoogleMapView() {
           </div>
         )}
 
-        {/* ── Legend ── */}
+        {/* Legend */}
         <div className="map-legend">
           <div className="legend-title">Legend</div>
           <div className="legend-item">
-            <span className="legend-color" style={{ backgroundColor: 'var(--brand-accent-blue)', border: '1px solid #38bdf8' }} />
+            <span
+              className="legend-color"
+              style={{ backgroundColor: 'var(--brand-accent-blue)', border: '1px solid #38bdf8' }}
+            />
             <span>Selected Parcel</span>
           </div>
           <div className="legend-item">
-            <span className="legend-color" style={{ backgroundColor: 'rgba(15,23,42,0.5)', border: '1px solid rgba(255,255,255,0.4)' }} />
+            <span
+              className="legend-color"
+              style={{ backgroundColor: 'rgba(15,23,42,0.5)', border: '1px solid rgba(255,255,255,0.4)' }}
+            />
             <span>Cadastral Boundary</span>
           </div>
           <div className="legend-item">
@@ -509,7 +668,7 @@ export default function GoogleMapView() {
           </div>
         </div>
 
-        {/* ── Scale Bar ── */}
+        {/* Scale Bar */}
         <div className="map-scale">
           <span>0</span>
           <div className="scale-ruler" />
