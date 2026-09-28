@@ -20,17 +20,22 @@ export default function Sidebar() {
   const {
     activeModule,
     setActiveModule,
+    currentRole,
     t,
     setHelpModalOpen,
     setSidebarMobileOpen,
     isPresentationActive,
-    openPresentation
+    openPresentation,
+    isModuleAllowed
   } = useApp();
 
   const handleNavClick = (id) => {
     if (id === 'presentation') {
       openPresentation();
       setSidebarMobileOpen(false);
+      return;
+    }
+    if (isModuleAllowed && !isModuleAllowed(id)) {
       return;
     }
     setActiveModule(id);
@@ -48,6 +53,8 @@ export default function Sidebar() {
     { id: 'admin', label: 'Administration & Security', icon: ShieldCheck },
     { id: 'health', label: 'System / Data Health', icon: Activity }
   ];
+
+  const visibleNavItems = navItems.filter(item => !isModuleAllowed || isModuleAllowed(item.id));
 
   return (
     <aside className="sidebar-container">
@@ -86,7 +93,7 @@ export default function Sidebar() {
 
       {/* Primary Navigation */}
       <nav className="sidebar-nav">
-        {navItems.map(item => {
+        {visibleNavItems.map(item => {
           const Icon = item.icon;
           const isActive = activeModule === item.id;
           return (

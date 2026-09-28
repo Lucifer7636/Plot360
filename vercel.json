@@ -4,7 +4,7 @@
   "rewrites": [
     {
       "source": "/api/v1/:match*",
-      "destination": "http://127.0.0.1:8000/api/v1/:match*"
+      "destination": "https://plot360.onrender.com/api/v1/:match*"
     },
     {
       "source": "/(.*)",

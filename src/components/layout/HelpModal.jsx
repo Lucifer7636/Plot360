@@ -161,10 +161,10 @@ export default function HelpModal() {
                     { role: 'Administrator', scope: 'Administrative', perm: 'Full system configuration, user roles, simulated connectors' },
                     { role: 'Auditor', scope: 'Oversight', perm: 'Compliance verification, immutable audit logs, tamper audits' }
                   ].map(r => (
-                    <tr key={r.role} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                    <tr key={r.role} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
                       <td style={{ padding: '6px 8px', fontWeight: 600, color: 'var(--text-primary)' }}>{r.role}</td>
                       <td style={{ padding: '6px 8px' }}>
-                        <span style={{ padding: '1px 5px', borderRadius: '3px', backgroundColor: 'rgba(255,255,255,0.08)', fontSize: '10px' }}>
+                        <span style={{ padding: '1px 5px', borderRadius: '3px', backgroundColor: 'var(--bg-card-alt)', border: '1px solid var(--border-subtle)', fontSize: '10px' }}>
                           {r.scope}
                         </span>
                       </td>

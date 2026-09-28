@@ -1209,3 +1209,75 @@
   color: var(--brand-accent-cyan);
   margin-top: 1px;
 }
+
+/* ==========================================================================
+   8. EFFECTIVE LIGHT THEME SYSTEM ENHANCEMENTS
+   ========================================================================== */
+
+/* Universal Form & Interactive Elements */
+input, select, textarea {
+  color: var(--text-primary);
+  accent-color: var(--brand-accent-blue);
+}
+
+input::placeholder, textarea::placeholder {
+  color: var(--text-muted);
+}
+
+select option {
+  background-color: var(--bg-card);
+  color: var(--text-primary);
+}
+
+/* Tables & Interactive Data Rows */
+table {
+  color: var(--text-primary);
+}
+
+[data-theme='light'] tr:hover td {
+  background-color: var(--bg-card-hover);
+}
+
+/* Floating Map Overlays, Drawers & Popups in Light Mode */
+[data-theme='light'] .map-pill-top-left,
+[data-theme='light'] .map-basemap-toggle,
+[data-theme='light'] .map-toolbar,
+[data-theme='light'] .map-legend,
+[data-theme='light'] .map-scale,
+[data-theme='light'] .map-layers-drawer {
+  background-color: rgba(255, 255, 255, 0.95);
+  border-color: var(--border-card);
+  box-shadow: var(--shadow-md);
+  color: var(--text-primary);
+}
+
+[data-theme='light'] .map-tool-btn {
+  border-bottom: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+}
+
+[data-theme='light'] .map-tool-btn:hover {
+  background-color: var(--bg-card-hover);
+  color: var(--text-primary);
+}
+
+[data-theme='light'] .parcel-popup-marker {
+  background-color: #ffffff;
+  border-color: var(--brand-accent-blue);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15), var(--shadow-glow);
+}
+
+[data-theme='light'] .parcel-popup-marker::after {
+  border-color: var(--brand-accent-blue) transparent transparent transparent;
+}
+
+[data-theme='light'] .badge-demo {
+  background-color: var(--bg-badge-blue);
+  border-color: rgba(2, 132, 199, 0.3);
+  color: var(--brand-accent-cyan);
+}
+
+[data-theme='light'] .thumb-card {
+  background-color: var(--bg-card-alt);
+}
+

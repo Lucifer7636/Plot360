@@ -334,7 +334,7 @@ export default function ViewEvidenceModal() {
                 height: '100%',
                 padding: '40px',
                 textAlign: 'center',
-                backgroundColor: '#050b18',
+                backgroundColor: 'var(--bg-card-alt)',
                 gap: '14px'
               }}
             >
@@ -360,10 +360,10 @@ export default function ViewEvidenceModal() {
                 In strict accordance with PLOT360 Anti-Fabrication rules, synthetic or placeholder satellite imagery is prohibited.
               </p>
               <div style={{ display: 'flex', gap: '8px', marginTop: '6px' }}>
-                <span style={{ padding: '4px 10px', borderRadius: '5px', backgroundColor: 'rgba(255,255,255,0.06)', border: '1px solid var(--border-card)', fontSize: '11px', color: 'var(--text-muted)' }}>
+                <span style={{ padding: '4px 10px', borderRadius: '5px', backgroundColor: 'var(--bg-card)', border: '1px solid var(--border-card)', fontSize: '11px', color: 'var(--text-muted)' }}>
                   SATELLITE_STATUS: <strong style={{ color: 'var(--status-warning)' }}>NOT_AVAILABLE</strong>
                 </span>
-                <span style={{ padding: '4px 10px', borderRadius: '5px', backgroundColor: 'rgba(255,255,255,0.06)', border: '1px solid var(--border-card)', fontSize: '11px', color: 'var(--text-muted)' }}>
+                <span style={{ padding: '4px 10px', borderRadius: '5px', backgroundColor: 'var(--bg-card)', border: '1px solid var(--border-card)', fontSize: '11px', color: 'var(--text-muted)' }}>
                   CANONICAL_TARGET: <strong style={{ color: 'var(--brand-accent-cyan)' }}>P-1027 (Chandigarh)</strong>
                 </span>
               </div>

@@ -574,19 +574,8 @@ export default function GoogleMapView() {
           </div>
           <div
             title="Internal Cadastral Classification"
-            style={{
-              fontSize: '9px',
-              fontWeight: 700,
-              letterSpacing: '0.04em',
-              padding: '2px 7px',
-              borderRadius: '4px',
-              backgroundColor: 'rgba(7, 16, 34, 0.88)',
-              border: '1px solid rgba(56, 189, 248, 0.3)',
-              color: 'var(--brand-accent-cyan, #38bdf8)',
-              width: 'fit-content',
-              boxShadow: '0 2px 6px rgba(0,0,0,0.4)',
-              backdropFilter: 'blur(4px)'
-            }}
+            className="badge-demo"
+            style={{ width: 'fit-content' }}
           >
             ILLUSTRATIVE_DEMO_GEOMETRY
           </div>

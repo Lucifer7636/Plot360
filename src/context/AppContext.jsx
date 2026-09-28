@@ -27,8 +27,57 @@ const ROLE_ALIAS = {
   tax: 'tax_officer',
   municipal: 'municipal_officer',
   citizen: 'citizen',
-  auditor: 'auditor'
+  auditor: 'auditor',
+
+  // Canonical role specification aliases
+  super_admin: 'administrator',
+  town_planner: 'planning_officer',
+  registrar: 'registration_officer',
+  surveyor: 'surveyor'
 };
+
+export function normalizeRole(role) {
+  if (!role) return 'citizen';
+  const r = String(role).trim().toLowerCase();
+  return ROLE_ALIAS[r] || r;
+}
+
+/**
+ * Authoritative module access matrix derived directly from backend RBAC
+ * granular permissions (backend/app/auth/permissions.py):
+ * - explorer: parcel:read (All roles)
+ * - intelligence: parcel:read + privileged/officer area measurement & valuation
+ * - records: ror:read/write, registration:read/write (Revenue, Registrar, Admin, Auditor)
+ * - planning: planning:read/write, building:read/write (Town Planner, Municipal, Admin, Auditor)
+ * - citizen: service_request:create/read (Citizen, Revenue Officer, Admin, Auditor)
+ * - analytics: analytics:read, conflict:read/resolve, ai:read/review (All Officers, Admin, Auditor)
+ * - integrations: integration:read/sync (Admin, Auditor)
+ * - admin: admin:manage_users, config:read/write (Admin)
+ * - health: audit:read, system telemetry (Admin, Auditor)
+ */
+export const ROLE_MODULE_PERMISSIONS = {
+  administrator: ['explorer', 'intelligence', 'records', 'planning', 'citizen', 'analytics', 'integrations', 'admin', 'health'],
+  revenue_officer: ['explorer', 'intelligence', 'records', 'citizen', 'analytics'],
+  surveyor: ['explorer', 'intelligence', 'analytics'],
+  registration_officer: ['explorer', 'intelligence', 'records', 'analytics'],
+  tax_officer: ['explorer', 'intelligence', 'analytics'],
+  planning_officer: ['explorer', 'intelligence', 'planning', 'analytics'],
+  municipal_officer: ['explorer', 'intelligence', 'planning', 'analytics'],
+  auditor: ['explorer', 'intelligence', 'records', 'planning', 'analytics', 'integrations', 'health'],
+  citizen: ['explorer', 'citizen']
+};
+
+export function isModuleAllowedForRole(moduleId, role) {
+  const canonical = normalizeRole(role);
+  const allowed = ROLE_MODULE_PERMISSIONS[canonical] || ['explorer'];
+  return allowed.includes(moduleId);
+}
+
+export function getAllowedModulesForRole(role) {
+  const canonical = normalizeRole(role);
+  return ROLE_MODULE_PERMISSIONS[canonical] || ['explorer'];
+}
+
 
 /**
  * P0.1 Centralized sanitization for local demo parcel data.
@@ -187,8 +236,14 @@ export function AppProvider({ children }) {
   // Role Based Access Control handler
 
   const setCurrentRole = (newRole) => {
-    const canonicalRole = ROLE_ALIAS[newRole] || newRole;
+    const canonicalRole = normalizeRole(newRole);
     setCurrentRoleState(canonicalRole);
+
+    // If currently active module becomes inaccessible after a role change,
+    // safely fall back to the platform baseline module 'explorer'
+    if (!isModuleAllowedForRole(activeModule, canonicalRole)) {
+      setActiveModuleState('explorer');
+    }
 
     // Invalidate old role's sensitive notifications and cached state immediately (Parts 37, 38, 39)
     setNotifications([]);
@@ -370,8 +425,11 @@ export function AppProvider({ children }) {
       openPresentation();
       return;
     }
+    if (!isModuleAllowedForRole(newModule, currentRole)) {
+      return;
+    }
     setActiveModuleState(newModule);
-  }, [openPresentation]);
+  }, [openPresentation, currentRole]);
 
   // Global Search state
   const [searchQuery, setSearchQuery] = useState('');
@@ -471,6 +529,9 @@ export function AppProvider({ children }) {
         currentRole,
         setCurrentRole,
         roles: ROLES,
+        allowedModules: getAllowedModulesForRole(currentRole),
+        isModuleAllowed: (moduleId) => isModuleAllowedForRole(moduleId, currentRole),
+        isModuleAllowedForRole,
         theme,
         setTheme,
         deviceMode,

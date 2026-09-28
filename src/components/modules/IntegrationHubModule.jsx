@@ -318,11 +318,11 @@ export default function IntegrationHubModule() {
         {apiResponse && (
           <pre
             style={{
-              background: '#040915',
+              background: 'var(--bg-input)',
               padding: '14px',
               borderRadius: '8px',
               border: '1px solid var(--border-card)',
-              color: '#38bdf8',
+              color: 'var(--brand-accent-cyan)',
               fontFamily: 'monospace',
               fontSize: '11.5px',
               overflowX: 'auto',

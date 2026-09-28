@@ -1,0 +1,2 @@
+/api/v1/*  https://plot360.onrender.com/api/v1/:splat  200
+/*         /index.html                                 200
