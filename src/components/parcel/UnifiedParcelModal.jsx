@@ -159,7 +159,7 @@ export default function UnifiedParcelModal() {
                   document.body.appendChild(link);
                   link.click();
                   document.body.removeChild(link);
-                  URL.revokeObjectURL(url);
+                  setTimeout(() => URL.revokeObjectURL(url), 2000);
                   setExportState('done');
                   setTimeout(() => setExportState('idle'), 3000);
                 } catch (err) {

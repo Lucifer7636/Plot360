@@ -27,7 +27,7 @@ class Settings(BaseSettings):
     APP_ENV: str = "development"
     DEBUG: bool = True
     LOG_LEVEL: str = "INFO"
-    CORS_ORIGINS: str = "http://localhost:5173,http://localhost:3000,http://127.0.0.1:5173,http://localhost:8000"
+    CORS_ORIGINS: str = "http://localhost:5173,http://localhost:3000,http://127.0.0.1:5173,http://localhost:8000,https://plot360.onrender.com"
 
     # Canonical Sentinel-2 Dataset Source (Relative to Project Root by Default)
     SENTINEL_DATA_DIR: str = "PLOT360_Sentinel2_2020_2025"

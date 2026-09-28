@@ -209,7 +209,7 @@ export default function ParcelDetailsPanel() {
                 document.body.appendChild(link);
                 link.click();
                 document.body.removeChild(link);
-                URL.revokeObjectURL(url);
+                setTimeout(() => URL.revokeObjectURL(url), 2000);
                 setPanelExportState('done');
                 setTimeout(() => setPanelExportState('idle'), 3000);
               } catch (err) {

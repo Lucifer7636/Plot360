@@ -61,7 +61,8 @@ app.add_middleware(RequestIdMiddleware)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.cors_origins_list + ["*"],
+    allow_origins=[o for o in settings.cors_origins_list if o and o != "*"],
+    allow_origin_regex=r"^https://.*(\.vercel\.app|\.pages\.dev|\.onrender\.com)$",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

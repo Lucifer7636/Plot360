@@ -567,7 +567,7 @@ export default function GoogleMapView() {
         )}
 
         {/* Floating Top Left Pill with Cadastral Status */}
-        <div style={{ position: 'absolute', top: '10px', left: '10px', display: 'flex', flexDirection: 'column', gap: '5px', zIndex: 10 }}>
+        <div style={{ position: 'absolute', top: '10px', left: '10px', display: 'flex', flexDirection: 'column', gap: '5px', zIndex: 1000 }}>
           <div className="map-pill-top-left" style={{ position: 'static' }}>
             <span>Cadastral Parcels</span>
             <X size={12} style={{ cursor: 'pointer' }} onClick={() => toggleLayer('parcels')} />
